@@ -35,7 +35,7 @@ import random
 
 import numpy as np
 import torch
-from pytorch_pretrained_bert import (CONFIG_NAME, WEIGHTS_NAME, OpenAIAdam,
+from pytorch_transformers import (CONFIG_NAME, WEIGHTS_NAME, OpenAIAdam,
                                      OpenAIGPTDoubleHeadsModel,
                                      OpenAIGPTTokenizer, cached_path)
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,

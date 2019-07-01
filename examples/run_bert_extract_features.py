@@ -23,8 +23,8 @@ import logging
 import re
 
 import torch
-from pytorch_pretrained_bert.modeling import BertModel
-from pytorch_pretrained_bert.tokenization import BertTokenizer
+from pytorch_transformers.modeling import BertModel
+from pytorch_transformers.tokenization import BertTokenizer
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
 

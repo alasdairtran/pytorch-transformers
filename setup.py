@@ -37,7 +37,7 @@ from io import open
 from setuptools import find_packages, setup
 
 setup(
-    name="pytorch_pretrained_bert",
+    name="pytorch_transformers",
     version="0.6.2",
     author="Thomas Wolf, Victor Sanh, Tim Rault, Google AI Language Team Authors, Open AI team Authors",
     author_email="thomas@huggingface.co",
@@ -58,7 +58,7 @@ setup(
                       'sentencepiece'],
     entry_points={
       'console_scripts': [
-        "pytorch_pretrained_bert=pytorch_pretrained_bert.__main__:main",
+        "pytorch_transformers=pytorch_transformers.__main__:main",
       ]
     },
     # python_requires='>=3.5.0',

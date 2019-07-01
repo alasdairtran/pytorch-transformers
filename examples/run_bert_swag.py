@@ -27,12 +27,12 @@ from io import open
 
 import numpy as np
 import torch
-from pytorch_pretrained_bert.file_utils import (CONFIG_NAME,
+from pytorch_transformers.file_utils import (CONFIG_NAME,
                                                 PYTORCH_PRETRAINED_BERT_CACHE,
                                                 WEIGHTS_NAME)
-from pytorch_pretrained_bert.modeling import BertConfig, BertForMultipleChoice
-from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
-from pytorch_pretrained_bert.tokenization import BertTokenizer
+from pytorch_transformers.modeling import BertConfig, BertForMultipleChoice
+from pytorch_transformers.optimization import BertAdam, WarmupLinearSchedule
+from pytorch_transformers.tokenization import BertTokenizer
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler

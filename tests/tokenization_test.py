@@ -21,12 +21,11 @@ import unittest
 from io import open
 
 import pytest
-from pytorch_pretrained_bert.tokenization import (PRETRAINED_VOCAB_ARCHIVE_MAP,
-                                                  BasicTokenizer,
-                                                  BertTokenizer,
-                                                  WordpieceTokenizer,
-                                                  _is_control, _is_punctuation,
-                                                  _is_whitespace)
+
+from pytorch_transformers.tokenization import (PRETRAINED_VOCAB_ARCHIVE_MAP,
+                                               BasicTokenizer, BertTokenizer,
+                                               WordpieceTokenizer, _is_control,
+                                               _is_punctuation, _is_whitespace)
 
 
 class TokenizationTest(unittest.TestCase):

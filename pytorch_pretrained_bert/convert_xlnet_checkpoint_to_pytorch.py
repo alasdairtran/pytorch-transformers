@@ -20,7 +20,7 @@ import argparse
 import os
 
 import torch
-from pytorch_pretrained_bert.modeling_xlnet import (
+from pytorch_transformers.modeling_xlnet import (
     CONFIG_NAME, WEIGHTS_NAME, XLNetConfig, XLNetForQuestionAnswering,
     XLNetForSequenceClassification, XLNetLMHeadModel, load_tf_weights_in_xlnet)
 

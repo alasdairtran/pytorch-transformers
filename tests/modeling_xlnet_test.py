@@ -22,8 +22,9 @@ import unittest
 
 import pytest
 import torch
-from pytorch_pretrained_bert import XLNetConfig, XLNetLMHeadModel, XLNetModel
-from pytorch_pretrained_bert.modeling_xlnet import PRETRAINED_MODEL_ARCHIVE_MAP
+
+from pytorch_transformers import XLNetConfig, XLNetLMHeadModel, XLNetModel
+from pytorch_transformers.modeling_xlnet import PRETRAINED_MODEL_ARCHIVE_MAP
 
 
 class XLNetModelTest(unittest.TestCase):

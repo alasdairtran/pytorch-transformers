@@ -13,10 +13,10 @@ from torch.utils.data import DataLoader, Dataset, RandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
-from pytorch_pretrained_bert import WEIGHTS_NAME, CONFIG_NAME
-from pytorch_pretrained_bert.modeling import BertForPreTraining
-from pytorch_pretrained_bert.tokenization import BertTokenizer
-from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
+from pytorch_transformers import WEIGHTS_NAME, CONFIG_NAME
+from pytorch_transformers.modeling import BertForPreTraining
+from pytorch_transformers.tokenization import BertTokenizer
+from pytorch_transformers.optimization import BertAdam, WarmupLinearSchedule
 
 InputFeatures = namedtuple("InputFeatures", "input_ids input_mask segment_ids lm_label_ids is_next")
 
@@ -327,7 +327,7 @@ def main():
     # Save a trained model
     logging.info("** ** * Saving fine-tuned model ** ** * ")
     model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
-    
+
     output_model_file = os.path.join(args.output_dir, WEIGHTS_NAME)
     output_config_file = os.path.join(args.output_dir, CONFIG_NAME)
 

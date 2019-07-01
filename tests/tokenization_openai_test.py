@@ -21,7 +21,8 @@ import shutil
 import unittest
 
 import pytest
-from pytorch_pretrained_bert.tokenization_openai import (
+
+from pytorch_transformers.tokenization_openai import (
     PRETRAINED_VOCAB_ARCHIVE_MAP, OpenAIGPTTokenizer)
 
 

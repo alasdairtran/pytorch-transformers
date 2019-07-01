@@ -6,7 +6,7 @@ import logging
 import numpy as np
 import torch
 import torch.nn.functional as F
-from pytorch_pretrained_bert import GPT2LMHeadModel, GPT2Tokenizer
+from pytorch_transformers import GPT2LMHeadModel, GPT2Tokenizer
 from tqdm import trange
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',

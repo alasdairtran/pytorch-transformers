@@ -21,7 +21,8 @@ import unittest
 from io import open
 
 import pytest
-from pytorch_pretrained_bert.tokenization_transfo_xl import (
+
+from pytorch_transformers.tokenization_transfo_xl import (
     PRETRAINED_VOCAB_ARCHIVE_MAP, TransfoXLTokenizer)
 
 

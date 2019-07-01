@@ -22,9 +22,9 @@ import unittest
 
 import pytest
 import torch
-from pytorch_pretrained_bert import (GPT2Config, GPT2DoubleHeadsModel,
+from pytorch_transformers import (GPT2Config, GPT2DoubleHeadsModel,
                                      GPT2LMHeadModel, GPT2Model)
-from pytorch_pretrained_bert.modeling_gpt2 import PRETRAINED_MODEL_ARCHIVE_MAP
+from pytorch_transformers.modeling_gpt2 import PRETRAINED_MODEL_ARCHIVE_MAP
 
 
 class GPT2ModelTest(unittest.TestCase):

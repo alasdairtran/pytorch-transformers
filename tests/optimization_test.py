@@ -18,8 +18,9 @@ import unittest
 
 import numpy as np
 import torch
-from pytorch_pretrained_bert import BertAdam, OpenAIAdam
-from pytorch_pretrained_bert.optimization import (
+
+from pytorch_transformers import BertAdam, OpenAIAdam
+from pytorch_transformers.optimization import (
     ConstantLR, WarmupConstantSchedule, WarmupCosineSchedule,
     WarmupCosineWithHardRestartsSchedule,
     WarmupCosineWithWarmupRestartsSchedule, WarmupLinearSchedule)

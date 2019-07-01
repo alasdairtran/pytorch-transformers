@@ -22,7 +22,8 @@ import unittest
 from io import open
 
 import pytest
-from pytorch_pretrained_bert.tokenization_xlnet import (
+
+from pytorch_transformers.tokenization_xlnet import (
     PRETRAINED_VOCAB_ARCHIVE_MAP, SPIECE_UNDERLINE, XLNetTokenizer)
 
 if sys.version_info[0] == 2:

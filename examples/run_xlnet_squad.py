@@ -26,10 +26,10 @@ from io import open
 
 import numpy as np
 import torch
-from pytorch_pretrained_bert import CONFIG_NAME, WEIGHTS_NAME
-from pytorch_pretrained_bert.modeling_xlnet import BertForQuestionAnswering
-from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
-from pytorch_pretrained_bert.tokenization_xlnet import XLNetTokenizer
+from pytorch_transformers import CONFIG_NAME, WEIGHTS_NAME
+from pytorch_transformers.modeling_xlnet import BertForQuestionAnswering
+from pytorch_transformers.optimization import BertAdam, WarmupLinearSchedule
+from pytorch_transformers.tokenization_xlnet import XLNetTokenizer
 from tensorboardX import SummaryWriter
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)

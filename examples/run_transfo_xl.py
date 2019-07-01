@@ -28,7 +28,7 @@ import math
 import time
 
 import torch
-from pytorch_pretrained_bert import (TransfoXLCorpus, TransfoXLLMHeadModel,
+from pytorch_transformers import (TransfoXLCorpus, TransfoXLLMHeadModel,
                                      TransfoXLTokenizer)
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',

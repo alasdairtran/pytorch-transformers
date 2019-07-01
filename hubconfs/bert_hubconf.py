@@ -1,4 +1,4 @@
-from pytorch_pretrained_bert.modeling import (BertForMaskedLM,
+from pytorch_transformers.modeling import (BertForMaskedLM,
                                               BertForMultipleChoice,
                                               BertForNextSentencePrediction,
                                               BertForPreTraining,
@@ -6,7 +6,7 @@ from pytorch_pretrained_bert.modeling import (BertForMaskedLM,
                                               BertForSequenceClassification,
                                               BertForTokenClassification,
                                               BertModel)
-from pytorch_pretrained_bert.tokenization import BertTokenizer
+from pytorch_transformers.tokenization import BertTokenizer
 
 # A lot of models share the same param doc. Use a decorator
 # to save typing

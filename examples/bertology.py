@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 import numpy as np
 import torch
-from pytorch_pretrained_bert import (BertForSequenceClassification,
+from pytorch_transformers import (BertForSequenceClassification,
                                      BertTokenizer)
 from torch.nn import CrossEntropyLoss, MSELoss
 from torch.utils.data import (DataLoader, SequentialSampler, Subset,
