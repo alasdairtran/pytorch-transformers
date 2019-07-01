@@ -2,13 +2,12 @@
 
 import argparse
 import logging
-from tqdm import trange
 
+import numpy as np
 import torch
 import torch.nn.functional as F
-import numpy as np
-
 from pytorch_pretrained_bert import GPT2LMHeadModel, GPT2Tokenizer
+from tqdm import trange
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -127,5 +126,3 @@ def run_model():
 
 if __name__ == '__main__':
     run_model()
-
-

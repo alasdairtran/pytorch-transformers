@@ -14,18 +14,18 @@
 # limitations under the License.
 """Convert BERT checkpoint."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
+import argparse
 import os
 import re
-import argparse
+
+import numpy as np
 import tensorflow as tf
 import torch
-import numpy as np
+from pytorch_pretrained_bert.modeling import (BertConfig, BertForPreTraining,
+                                              load_tf_weights_in_bert)
 
-from pytorch_pretrained_bert.modeling import BertConfig, BertForPreTraining, load_tf_weights_in_bert
 
 def convert_tf_checkpoint_to_pytorch(tf_checkpoint_path, bert_config_file, pytorch_dump_path):
     # Initialise PyTorch model

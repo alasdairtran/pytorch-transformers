@@ -23,12 +23,12 @@ import glob
 import logging
 import os
 import sys
+import unicodedata
 from collections import Counter, OrderedDict
 from io import open
-import unicodedata
 
-import torch
 import numpy as np
+import torch
 
 from .file_utils import cached_path
 

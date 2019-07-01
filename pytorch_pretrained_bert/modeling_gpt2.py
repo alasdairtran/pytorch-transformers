@@ -15,7 +15,8 @@
 # limitations under the License.
 """PyTorch OpenAI GPT-2 model."""
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import collections
 import copy
@@ -32,7 +33,8 @@ from torch.nn import CrossEntropyLoss
 from torch.nn.parameter import Parameter
 
 from .file_utils import cached_path
-from .model_utils import Conv1D, CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig, PreTrainedModel, prune_conv1d_layer
+from .model_utils import (CONFIG_NAME, WEIGHTS_NAME, Conv1D, PretrainedConfig,
+                          PreTrainedModel, prune_conv1d_layer)
 from .modeling import BertLayerNorm as LayerNorm
 
 logger = logging.getLogger(__name__)

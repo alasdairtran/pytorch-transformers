@@ -17,7 +17,6 @@
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import copy
 import json
@@ -29,12 +28,12 @@ from io import open
 
 import torch
 from torch import nn
-from torch.nn import functional as F
 from torch.nn import CrossEntropyLoss, MSELoss
+from torch.nn import functional as F
 
 from .file_utils import cached_path
-from .model_utils import CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig, PreTrainedModel
-
+from .model_utils import (CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig,
+                          PreTrainedModel)
 
 logger = logging.getLogger(__name__)
 
@@ -1100,7 +1099,7 @@ class XLNetForSequenceClassification(XLNetPreTrainedModel):
     Outputs: Tuple of (logits or loss, mems)
         `logits or loss`:
             if labels is None:
-                Token logits with shape [batch_size, sequence_length] 
+                Token logits with shape [batch_size, sequence_length]
             else:
                 CrossEntropy loss with the targets
         `new_mems`: list (num layers) of updated mem states at the entry of each layer

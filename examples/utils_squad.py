@@ -18,13 +18,14 @@
 
 from __future__ import absolute_import, division, print_function
 
+import collections
 import json
 import logging
 import math
-import collections
 from io import open
 
-from pytorch_pretrained_bert.tokenization import BasicTokenizer, whitespace_tokenize
+from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
+                                                  whitespace_tokenize)
 
 logger = logging.getLogger(__name__)
 
@@ -550,13 +551,13 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                         text="",
                         start_logit=null_start_logit,
                         end_logit=null_end_logit))
-                
+
             # In very rare edge cases we could only have single null prediction.
             # So we just create a nonce prediction in this case to avoid failure.
             if len(nbest)==1:
                 nbest.insert(0,
                     _NbestPrediction(text="empty", start_logit=0.0, end_logit=0.0))
-                
+
         # In very rare edge cases we could have no valid predictions. So we
         # just create a nonce prediction in this case to avoid failure.
         if not nbest:

@@ -26,19 +26,18 @@ from io import open
 
 import numpy as np
 import torch
+from pytorch_pretrained_bert import CONFIG_NAME, WEIGHTS_NAME
+from pytorch_pretrained_bert.modeling_xlnet import BertForQuestionAnswering
+from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
+from pytorch_pretrained_bert.tokenization_xlnet import XLNetTokenizer
+from tensorboardX import SummaryWriter
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
-from tensorboardX import SummaryWriter
-
-from pytorch_pretrained_bert import WEIGHTS_NAME, CONFIG_NAME
-from pytorch_pretrained_bert.modeling_xlnet import BertForQuestionAnswering
-from pytorch_pretrained_bert.tokenization_xlnet import XLNetTokenizer
-from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
-
-from utils_squad import read_squad_examples, convert_examples_to_features, RawResult, write_predictions
+from utils_squad import (RawResult, convert_examples_to_features,
+                         read_squad_examples, write_predictions)
 
 if sys.version_info[0] == 2:
     import cPickle as pickle

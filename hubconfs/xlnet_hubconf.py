@@ -1,10 +1,6 @@
+from pytorch_pretrained_bert.modeling_xlnet import (  # XLNetForSequenceClassification
+    XLNetConfig, XLNetLMHeadModel, XLNetModel)
 from pytorch_pretrained_bert.tokenization_xlnet import XLNetTokenizer
-from pytorch_pretrained_bert.modeling_xlnet import (
-    XLNetConfig,
-    XLNetModel,
-    XLNetLMHeadModel,
-    # XLNetForSequenceClassification
-)
 
 # A lot of models share the same param doc. Use a decorator
 # to save typing

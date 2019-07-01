@@ -12,21 +12,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-import os
-import unittest
 import json
+import os
 import random
 import shutil
+import unittest
+
 import pytest
-
 import torch
-
-from pytorch_pretrained_bert import (XLNetConfig, XLNetModel, XLNetLMHeadModel)
+from pytorch_pretrained_bert import XLNetConfig, XLNetLMHeadModel, XLNetModel
 from pytorch_pretrained_bert.modeling_xlnet import PRETRAINED_MODEL_ARCHIVE_MAP
+
 
 class XLNetModelTest(unittest.TestCase):
     class XLNetModelTester(object):

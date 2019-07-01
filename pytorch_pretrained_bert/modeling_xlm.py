@@ -16,9 +16,9 @@
 """
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import copy
+import itertools
 import json
 import logging
 import math
@@ -26,17 +26,15 @@ import os
 import sys
 from io import open
 
-import math
-import itertools
 import numpy as np
-
 import torch
 from torch import nn
-from torch.nn import functional as F
 from torch.nn import CrossEntropyLoss, MSELoss
+from torch.nn import functional as F
 
 from .file_utils import cached_path
-from .model_utils import CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig, PreTrainedModel
+from .model_utils import (CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig,
+                          PreTrainedModel)
 
 logger = logging.getLogger(__name__)
 
@@ -424,8 +422,8 @@ class XLMPreTrainedModel(PreTrainedModel):
 
 class XLMModel(XLMPreTrainedModel):
 
-    ATTRIBUTES = ['encoder', 'eos_index', 'pad_index',  # 'with_output', 
-                  'n_langs', 'n_words', 'dim', 'n_layers', 'n_heads', 
+    ATTRIBUTES = ['encoder', 'eos_index', 'pad_index',  # 'with_output',
+                  'n_langs', 'n_words', 'dim', 'n_layers', 'n_heads',
                   'hidden_dim', 'dropout', 'attention_dropout', 'asm',
                   'asm_cutoffs', 'asm_div_value']
 
@@ -1478,7 +1476,7 @@ class XLMForSequenceClassification(XLMPreTrainedModel):
     Outputs: Tuple of (logits or loss, mems)
         `logits or loss`:
             if labels is None:
-                Token logits with shape [batch_size, sequence_length] 
+                Token logits with shape [batch_size, sequence_length]
             else:
                 CrossEntropy loss with the targets
         `new_mems`: list (num layers) of updated mem states at the entry of each layer

@@ -1,9 +1,7 @@
+from pytorch_pretrained_bert.modeling_openai import (OpenAIGPTDoubleHeadsModel,
+                                                     OpenAIGPTLMHeadModel,
+                                                     OpenAIGPTModel)
 from pytorch_pretrained_bert.tokenization_openai import OpenAIGPTTokenizer
-from pytorch_pretrained_bert.modeling_openai import (
-	OpenAIGPTModel,
-	OpenAIGPTLMHeadModel,
-	OpenAIGPTDoubleHeadsModel
-)
 
 # Dependecies that are not specified in global hubconf.py
 specific_dependencies = ['spacy', 'ftfy']
@@ -78,7 +76,7 @@ def openAIGPTTokenizer(*args, **kwargs):
     Example:
 		>>> import torch
         >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'openAIGPTTokenizer', 'openai-gpt')
-		
+
 		>>> text = "Who was Jim Henson ? Jim Henson was a puppeteer"
         >>> tokenized_text = tokenizer.tokenize(text)
         >>> indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)

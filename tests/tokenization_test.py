@@ -12,19 +12,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import os
+import shutil
 import unittest
 from io import open
-import shutil
-import pytest
 
-from pytorch_pretrained_bert.tokenization import (BasicTokenizer,
+import pytest
+from pytorch_pretrained_bert.tokenization import (PRETRAINED_VOCAB_ARCHIVE_MAP,
+                                                  BasicTokenizer,
                                                   BertTokenizer,
                                                   WordpieceTokenizer,
                                                   _is_control, _is_punctuation,
-                                                  _is_whitespace, PRETRAINED_VOCAB_ARCHIVE_MAP)
+                                                  _is_whitespace)
 
 
 class TokenizationTest(unittest.TestCase):

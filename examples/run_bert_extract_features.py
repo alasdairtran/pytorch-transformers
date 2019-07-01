@@ -14,24 +14,21 @@
 # limitations under the License.
 """Extract pre-computed feature vectors from a PyTorch BERT model."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import argparse
 import collections
-import logging
 import json
+import logging
 import re
 
 import torch
-from torch.utils.data import TensorDataset, DataLoader, SequentialSampler
+from pytorch_pretrained_bert.modeling import BertModel
+from pytorch_pretrained_bert.tokenization import BertTokenizer
+from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
 
-from pytorch_pretrained_bert.tokenization import BertTokenizer
-from pytorch_pretrained_bert.modeling import BertModel
-
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s', 
+logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
 logger = logging.getLogger(__name__)

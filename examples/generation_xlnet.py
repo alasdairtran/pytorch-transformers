@@ -1,8 +1,10 @@
-import torch
-from torch.nn import functional as F
-from pytorch_pretrained_bert import XLNetModel, XLNetLMHeadModel, XLNetTokenizer
-
 import logging
+
+import torch
+from pytorch_pretrained_bert import (XLNetLMHeadModel, XLNetModel,
+                                     XLNetTokenizer)
+from torch.nn import functional as F
+
 logging.basicConfig(level=logging.INFO)
 
 tokenizer = XLNetTokenizer.from_pretrained('xlnet-large-cased')

@@ -1,8 +1,6 @@
+from pytorch_pretrained_bert.modeling_transfo_xl import (TransfoXLLMHeadModel,
+                                                         TransfoXLModel)
 from pytorch_pretrained_bert.tokenization_transfo_xl import TransfoXLTokenizer
-from pytorch_pretrained_bert.modeling_transfo_xl import (
-    TransfoXLModel,
-    TransfoXLLMHeadModel
-)
 
 # A lot of models share the same param doc. Use a decorator
 # to save typing
@@ -47,7 +45,7 @@ def transformerXLTokenizer(*args, **kwargs):
     Example:
         >>> import torch
         >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'transformerXLTokenizer', 'transfo-xl-wt103')
-        
+
         >>> text = "Who was Jim Henson ?"
         >>> tokenized_text = tokenizer.tokenize(tokenized_text)
         >>> indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)

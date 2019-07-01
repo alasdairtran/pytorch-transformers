@@ -12,23 +12,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import os
+import shutil
 import sys
 import unittest
 from io import open
-import shutil
+
 import pytest
+from pytorch_pretrained_bert.tokenization_xlnet import (
+    PRETRAINED_VOCAB_ARCHIVE_MAP, SPIECE_UNDERLINE, XLNetTokenizer)
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
 else:
     import pickle
 
-from pytorch_pretrained_bert.tokenization_xlnet import (XLNetTokenizer,
-                                                        PRETRAINED_VOCAB_ARCHIVE_MAP,
-                                                        SPIECE_UNDERLINE)
 
 SAMPLE_VOCAB = os.path.join(os.path.dirname(
                     os.path.dirname(os.path.abspath(__file__))),

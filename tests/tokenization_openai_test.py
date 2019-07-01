@@ -12,15 +12,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-import os
-import unittest
 import json
+import os
 import shutil
-import pytest
+import unittest
 
-from pytorch_pretrained_bert.tokenization_openai import OpenAIGPTTokenizer, PRETRAINED_VOCAB_ARCHIVE_MAP
+import pytest
+from pytorch_pretrained_bert.tokenization_openai import (
+    PRETRAINED_VOCAB_ARCHIVE_MAP, OpenAIGPTTokenizer)
 
 
 class OpenAIGPTTokenizationTest(unittest.TestCase):

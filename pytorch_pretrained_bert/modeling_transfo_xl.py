@@ -18,14 +18,15 @@
     In particular https://github.com/kimiyoung/transformer-xl/blob/master/pytorch/mem_transformer.py
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-import os
+import collections
 import copy
 import json
-import math
 import logging
-import collections
+import math
+import os
 import sys
 from io import open
 
@@ -35,10 +36,12 @@ import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
 from torch.nn.parameter import Parameter
 
-from .modeling import BertLayerNorm as LayerNorm
-from .modeling_transfo_xl_utilities import ProjectedAdaptiveLogSoftmax, sample_logits
 from .file_utils import cached_path
-from .model_utils import CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig, PreTrainedModel
+from .model_utils import (CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig,
+                          PreTrainedModel)
+from .modeling import BertLayerNorm as LayerNorm
+from .modeling_transfo_xl_utilities import (ProjectedAdaptiveLogSoftmax,
+                                            sample_logits)
 
 logger = logging.getLogger(__name__)
 
@@ -342,7 +345,7 @@ class PositionwiseFF(nn.Module):
         return output
 
 class MultiHeadAttn(nn.Module):
-    def __init__(self, n_head, d_model, d_head, dropout, dropatt=0, 
+    def __init__(self, n_head, d_model, d_head, dropout, dropatt=0,
                  pre_lnorm=False, r_r_bias=None, r_w_bias=None):
         super(MultiHeadAttn, self).__init__()
 
@@ -671,7 +674,7 @@ class DecoderLayer(nn.Module):
         super(DecoderLayer, self).__init__()
 
         self.dec_attn = MultiHeadAttn(n_head, d_model, d_head, dropout, **kwargs)
-        self.pos_ff = PositionwiseFF(d_model, d_inner, dropout, 
+        self.pos_ff = PositionwiseFF(d_model, d_inner, dropout,
                                      pre_lnorm=kwargs.get('pre_lnorm'))
 
     def forward(self, dec_inp, dec_attn_mask=None, mems=None):
@@ -689,7 +692,7 @@ class RelLearnableDecoderLayer(nn.Module):
 
         self.dec_attn = RelLearnableMultiHeadAttn(n_head, d_model, d_head, dropout,
                                          **kwargs)
-        self.pos_ff = PositionwiseFF(d_model, d_inner, dropout, 
+        self.pos_ff = PositionwiseFF(d_model, d_inner, dropout,
                                      pre_lnorm=kwargs.get('pre_lnorm'))
 
     def forward(self, dec_inp, r_emb, r_w_bias, r_bias, dec_attn_mask=None, mems=None):
@@ -708,7 +711,7 @@ class RelPartialLearnableDecoderLayer(nn.Module):
 
         self.dec_attn = RelPartialLearnableMultiHeadAttn(n_head, d_model,
                             d_head, dropout, **kwargs)
-        self.pos_ff = PositionwiseFF(d_model, d_inner, dropout, 
+        self.pos_ff = PositionwiseFF(d_model, d_inner, dropout,
                                      pre_lnorm=kwargs.get('pre_lnorm'))
 
     def forward(self, dec_inp, r, dec_attn_mask=None, mems=None):
@@ -722,7 +725,7 @@ class RelPartialLearnableDecoderLayer(nn.Module):
 
 
 class AdaptiveEmbedding(nn.Module):
-    def __init__(self, n_token, d_embed, d_proj, cutoffs, div_val=1, 
+    def __init__(self, n_token, d_embed, d_proj, cutoffs, div_val=1,
                  sample_softmax=False):
         super(AdaptiveEmbedding, self).__init__()
 
@@ -760,7 +763,7 @@ class AdaptiveEmbedding(nn.Module):
         else:
             param = next(self.parameters())
             inp_flat = inp.view(-1)
-            emb_flat = torch.zeros([inp_flat.size(0), self.d_proj], 
+            emb_flat = torch.zeros([inp_flat.size(0), self.d_proj],
                 dtype=param.dtype, device=param.device)
             for i in range(len(self.cutoffs)):
                 l_idx, r_idx = self.cutoff_ends[i], self.cutoff_ends[i + 1]
@@ -901,7 +904,7 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
         self.n_head = config.n_head
         self.d_head = config.d_head
 
-        self.word_emb = AdaptiveEmbedding(config.n_token, config.d_embed, config.d_model, config.cutoffs, 
+        self.word_emb = AdaptiveEmbedding(config.n_token, config.d_embed, config.d_model, config.cutoffs,
                                           div_val=config.div_val)
 
         self.drop = nn.Dropout(config.dropout)
@@ -1034,7 +1037,7 @@ class TransfoXLModel(TransfoXLPreTrainedModel):
 
         hids = []
         if self.attn_type == 0: # default
-            pos_seq = torch.arange(klen-1, -1, -1.0, device=word_emb.device, 
+            pos_seq = torch.arange(klen-1, -1, -1.0, device=word_emb.device,
                                    dtype=word_emb.dtype)
             if self.clamp_len > 0:
                 pos_seq.clamp_(max=self.clamp_len)
@@ -1157,7 +1160,7 @@ class TransfoXLLMHeadModel(TransfoXLPreTrainedModel):
         A tuple of (last_hidden_state, new_mems)
         `softmax_output`: output of the (adaptive) softmax:
             if labels is None:
-                Negative log likelihood of shape [batch_size, sequence_length] 
+                Negative log likelihood of shape [batch_size, sequence_length]
             else:
                 log probabilities of tokens, shape [batch_size, sequence_length, n_tokens]
         `new_mems`: list (num layers) of updated mem states at the entry of each layer
@@ -1189,7 +1192,7 @@ class TransfoXLLMHeadModel(TransfoXLPreTrainedModel):
             self.sampler = LogUniformSampler(config.n_token, config.sample_softmax)
         # use adaptive softmax (including standard softmax)
         else:
-            self.crit = ProjectedAdaptiveLogSoftmax(config.n_token, config.d_embed, config.d_model, 
+            self.crit = ProjectedAdaptiveLogSoftmax(config.n_token, config.d_embed, config.d_model,
                                                     config.cutoffs, div_val=config.div_val)
         self.apply(self.init_weights)
         self.tie_weights()
@@ -1228,7 +1231,7 @@ class TransfoXLLMHeadModel(TransfoXLPreTrainedModel):
                         shape :: [mem_len, bsz, self.config.d_model] :: Warning: shapes are transposed here w. regards to input_ids
                     softmax_output: output of the (adaptive) softmax:
                         if labels is None:
-                            Negative log likelihood of shape :: [bsz, len] 
+                            Negative log likelihood of shape :: [bsz, len]
                         else:
                             log probabilities of tokens, shape :: [bsz, len, n_tokens]
         """

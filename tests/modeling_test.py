@@ -12,23 +12,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-import os
-import unittest
 import json
+import os
 import random
 import shutil
+import unittest
+
 import pytest
-
 import torch
-
-from pytorch_pretrained_bert import (BertConfig, BertModel, BertForMaskedLM,
-                                     BertForNextSentencePrediction, BertForPreTraining,
-                                     BertForQuestionAnswering, BertForSequenceClassification,
-                                     BertForTokenClassification, BertForMultipleChoice)
+from pytorch_pretrained_bert import (BertConfig, BertForMaskedLM,
+                                     BertForMultipleChoice,
+                                     BertForNextSentencePrediction,
+                                     BertForPreTraining,
+                                     BertForQuestionAnswering,
+                                     BertForSequenceClassification,
+                                     BertForTokenClassification, BertModel)
 from pytorch_pretrained_bert.modeling import PRETRAINED_MODEL_ARCHIVE_MAP
 
 
@@ -302,7 +302,7 @@ class BertModelTest(unittest.TestCase):
                 head_mask = torch.ones(self.num_hidden_layers, self.num_attention_heads).to(input_ids.device)
                 head_mask[0, 1:-1] = 0.0 # Mask all but the first and last heads on the first layer
                 head_mask[-1, 1:] = 0.0  # Mask all but the first head on the last layer
-                # Set that after having prepared the tensor to avoid error (leaf variable has been moved into the graph interior) 
+                # Set that after having prepared the tensor to avoid error (leaf variable has been moved into the graph interior)
                 head_mask.requires_grad_(requires_grad=True)
                 outputs = model(input_ids, token_type_ids, input_mask, head_mask=head_mask)
 

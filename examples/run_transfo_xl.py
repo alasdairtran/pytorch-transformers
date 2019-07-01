@@ -19,16 +19,17 @@
 
     This script with default values evaluates a pretrained Transformer-XL on WikiText 103
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import argparse
 import logging
-import time
 import math
+import time
 
 import torch
-
-from pytorch_pretrained_bert import TransfoXLLMHeadModel, TransfoXLCorpus, TransfoXLTokenizer
+from pytorch_pretrained_bert import (TransfoXLCorpus, TransfoXLLMHeadModel,
+                                     TransfoXLTokenizer)
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',

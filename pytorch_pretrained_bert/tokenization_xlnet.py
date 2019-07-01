@@ -20,10 +20,10 @@ import json
 import logging
 import os
 import sys
-from shutil import copyfile
-from io import open
-
 import unicodedata
+from io import open
+from shutil import copyfile
+
 import six
 
 from .file_utils import cached_path

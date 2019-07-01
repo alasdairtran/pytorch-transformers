@@ -14,14 +14,19 @@
 # limitations under the License.
 """PyTorch optimization for OpenAI GPT model."""
 
+import logging
 import math
+
 import torch
+from torch.nn.utils import clip_grad_norm_
 from torch.optim import Optimizer
 from torch.optim.optimizer import required
-from torch.nn.utils import clip_grad_norm_
-import logging
-from .optimization import SCHEDULES, _LRSchedule, WarmupCosineWithWarmupRestartsSchedule, \
-    WarmupCosineWithHardRestartsSchedule, WarmupCosineSchedule, WarmupLinearSchedule, WarmupConstantSchedule
+
+from .optimization import (SCHEDULES, WarmupConstantSchedule,
+                           WarmupCosineSchedule,
+                           WarmupCosineWithHardRestartsSchedule,
+                           WarmupCosineWithWarmupRestartsSchedule,
+                           WarmupLinearSchedule, _LRSchedule)
 
 logger = logging.getLogger(__name__)
 

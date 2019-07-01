@@ -14,19 +14,15 @@
 # limitations under the License.
 """Convert BERT checkpoint."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-import os
 import argparse
-import torch
+import os
 
-from pytorch_pretrained_bert.modeling_xlnet import (CONFIG_NAME, WEIGHTS_NAME,
-                                                    XLNetConfig,
-                                                    XLNetLMHeadModel, XLNetForQuestionAnswering,
-                                                    XLNetForSequenceClassification,
-                                                    load_tf_weights_in_xlnet)
+import torch
+from pytorch_pretrained_bert.modeling_xlnet import (
+    CONFIG_NAME, WEIGHTS_NAME, XLNetConfig, XLNetForQuestionAnswering,
+    XLNetForSequenceClassification, XLNetLMHeadModel, load_tf_weights_in_xlnet)
 
 GLUE_TASKS_NUM_LABELS = {
     "cola": 2,

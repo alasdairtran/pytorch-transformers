@@ -23,7 +23,7 @@ import os
 import sys
 
 from scipy.stats import pearsonr, spearmanr
-from sklearn.metrics import matthews_corrcoef, f1_score
+from sklearn.metrics import f1_score, matthews_corrcoef
 
 logger = logging.getLogger(__name__)
 
@@ -301,7 +301,7 @@ class QnliProcessor(DataProcessor):
     def get_dev_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "dev.tsv")), 
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")),
             "dev_matched")
 
     def get_labels(self):

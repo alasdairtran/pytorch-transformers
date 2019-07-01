@@ -20,26 +20,25 @@ from __future__ import absolute_import, division, print_function
 import argparse
 import logging
 import os
-import sys
 import random
-from tqdm import tqdm, trange
+import sys
 
 import numpy as np
-
 import torch
+from pytorch_pretrained_bert import CONFIG_NAME, WEIGHTS_NAME
+from pytorch_pretrained_bert.modeling_xlnet import \
+    XLNetForSequenceClassification
+from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
+from pytorch_pretrained_bert.tokenization_xlnet import XLNetTokenizer
+from tensorboardX import SummaryWriter
+from torch.nn import CrossEntropyLoss, MSELoss
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
-from torch.nn import CrossEntropyLoss, MSELoss
+from tqdm import tqdm, trange
 
-from tensorboardX import SummaryWriter
-
-from pytorch_pretrained_bert import WEIGHTS_NAME, CONFIG_NAME
-from pytorch_pretrained_bert.modeling_xlnet import XLNetForSequenceClassification
-from pytorch_pretrained_bert.tokenization_xlnet import XLNetTokenizer
-from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
-
-from utils_glue import processors, output_modes, convert_examples_to_features, compute_metrics
+from utils_glue import (compute_metrics, convert_examples_to_features,
+                        output_modes, processors)
 
 if sys.version_info[0] == 2:
     import cPickle as pickle

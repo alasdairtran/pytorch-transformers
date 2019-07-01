@@ -14,14 +14,15 @@
 # limitations under the License.
 """PyTorch optimization for BERT model."""
 
+import abc
+import logging
 import math
+import sys
+
 import torch
+from torch.nn.utils import clip_grad_norm_
 from torch.optim import Optimizer
 from torch.optim.optimizer import required
-from torch.nn.utils import clip_grad_norm_
-import logging
-import abc
-import sys
 
 logger = logging.getLogger(__name__)
 

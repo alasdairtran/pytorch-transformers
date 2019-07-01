@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-import os
 import argparse
 import logging
-from datetime import timedelta, datetime
-from tqdm import tqdm
+import os
+from datetime import datetime, timedelta
 
 import numpy as np
-
 import torch
-from torch.utils.data import DataLoader, SequentialSampler, TensorDataset, Subset
-from torch.utils.data.distributed import DistributedSampler
+from pytorch_pretrained_bert import (BertForSequenceClassification,
+                                     BertTokenizer)
 from torch.nn import CrossEntropyLoss, MSELoss
+from torch.utils.data import (DataLoader, SequentialSampler, Subset,
+                              TensorDataset)
+from torch.utils.data.distributed import DistributedSampler
+from tqdm import tqdm
 
-from pytorch_pretrained_bert import BertForSequenceClassification, BertTokenizer
-
-from utils_glue import processors, output_modes, convert_examples_to_features, compute_metrics
-
+from utils_glue import (compute_metrics, convert_examples_to_features,
+                        output_modes, processors)
 
 logger = logging.getLogger(__name__)
 
