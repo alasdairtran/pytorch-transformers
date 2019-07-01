@@ -1,6 +1,6 @@
-from pytorch_transformers.modeling_transfo_xl import (TransfoXLLMHeadModel,
+from transformers.modeling_transfo_xl import (TransfoXLLMHeadModel,
                                                          TransfoXLModel)
-from pytorch_transformers.tokenization_transfo_xl import TransfoXLTokenizer
+from transformers.tokenization_transfo_xl import TransfoXLTokenizer
 
 # A lot of models share the same param doc. Use a decorator
 # to save typing

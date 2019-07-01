@@ -22,7 +22,7 @@ import unittest
 
 import pytest
 
-from pytorch_transformers.tokenization_openai import (
+from transformers.tokenization_openai import (
     PRETRAINED_VOCAB_ARCHIVE_MAP, OpenAIGPTTokenizer)
 
 

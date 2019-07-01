@@ -24,7 +24,7 @@ import logging
 import math
 from io import open
 
-from pytorch_transformers.tokenization import (BasicTokenizer,
+from transformers.tokenization import (BasicTokenizer,
                                                   whitespace_tokenize)
 
 logger = logging.getLogger(__name__)

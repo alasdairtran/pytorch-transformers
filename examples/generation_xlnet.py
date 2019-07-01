@@ -1,7 +1,7 @@
 import logging
 
 import torch
-from pytorch_transformers import (XLNetLMHeadModel, XLNetModel,
+from transformers import (XLNetLMHeadModel, XLNetModel,
                                      XLNetTokenizer)
 from torch.nn import functional as F
 

@@ -21,12 +21,12 @@ import os
 import sys
 from io import open
 
-import pytorch_transformers.tokenization_transfo_xl as data_utils
+import transformers.tokenization_transfo_xl as data_utils
 import torch
-from pytorch_transformers.modeling_transfo_xl import (
+from transformers.modeling_transfo_xl import (
     CONFIG_NAME, WEIGHTS_NAME, TransfoXLConfig, TransfoXLLMHeadModel,
     load_tf_weights_in_transfo_xl)
-from pytorch_transformers.tokenization_transfo_xl import (CORPUS_NAME,
+from transformers.tokenization_transfo_xl import (CORPUS_NAME,
                                                              VOCAB_NAME)
 
 if sys.version_info[0] == 2:

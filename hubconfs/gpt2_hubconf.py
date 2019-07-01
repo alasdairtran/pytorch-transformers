@@ -1,6 +1,6 @@
-from pytorch_transformers.modeling_gpt2 import (GPT2DoubleHeadsModel,
+from transformers.modeling_gpt2 import (GPT2DoubleHeadsModel,
                                                    GPT2LMHeadModel, GPT2Model)
-from pytorch_transformers.tokenization_gpt2 import GPT2Tokenizer
+from transformers.tokenization_gpt2 import GPT2Tokenizer
 
 # A lot of models share the same param doc. Use a decorator
 # to save typing

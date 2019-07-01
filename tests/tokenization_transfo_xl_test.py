@@ -22,7 +22,7 @@ from io import open
 
 import pytest
 
-from pytorch_transformers.tokenization_transfo_xl import (
+from transformers.tokenization_transfo_xl import (
     PRETRAINED_VOCAB_ARCHIVE_MAP, TransfoXLTokenizer)
 
 

@@ -23,9 +23,9 @@ import unittest
 import pytest
 import torch
 
-from pytorch_transformers import (TransfoXLConfig, TransfoXLLMHeadModel,
+from transformers import (TransfoXLConfig, TransfoXLLMHeadModel,
                                   TransfoXLModel)
-from pytorch_transformers.modeling_transfo_xl import \
+from transformers.modeling_transfo_xl import \
     PRETRAINED_MODEL_ARCHIVE_MAP
 
 

@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import shelve
 
 from random import random, randrange, randint, shuffle, choice
-from pytorch_transformers.tokenization import BertTokenizer
+from transformers.tokenization import BertTokenizer
 import numpy as np
 import json
 import collections

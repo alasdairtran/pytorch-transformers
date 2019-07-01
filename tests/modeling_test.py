@@ -22,14 +22,14 @@ import unittest
 
 import pytest
 import torch
-from pytorch_transformers import (BertConfig, BertForMaskedLM,
+from transformers import (BertConfig, BertForMaskedLM,
                                      BertForMultipleChoice,
                                      BertForNextSentencePrediction,
                                      BertForPreTraining,
                                      BertForQuestionAnswering,
                                      BertForSequenceClassification,
                                      BertForTokenClassification, BertModel)
-from pytorch_transformers.modeling import PRETRAINED_MODEL_ARCHIVE_MAP
+from transformers.modeling import PRETRAINED_MODEL_ARCHIVE_MAP
 
 
 class BertModelTest(unittest.TestCase):

@@ -22,7 +22,7 @@ import unittest
 
 import pytest
 
-from pytorch_transformers.tokenization_gpt2 import (
+from transformers.tokenization_gpt2 import (
     PRETRAINED_VOCAB_ARCHIVE_MAP, GPT2Tokenizer)
 
 

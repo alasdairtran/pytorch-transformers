@@ -1,7 +1,7 @@
-from pytorch_transformers.modeling_openai import (OpenAIGPTDoubleHeadsModel,
+from transformers.modeling_openai import (OpenAIGPTDoubleHeadsModel,
                                                      OpenAIGPTLMHeadModel,
                                                      OpenAIGPTModel)
-from pytorch_transformers.tokenization_openai import OpenAIGPTTokenizer
+from transformers.tokenization_openai import OpenAIGPTTokenizer
 
 # Dependecies that are not specified in global hubconf.py
 specific_dependencies = ['spacy', 'ftfy']

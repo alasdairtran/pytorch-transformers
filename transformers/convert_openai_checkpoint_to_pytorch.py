@@ -20,7 +20,7 @@ import argparse
 from io import open
 
 import torch
-from pytorch_transformers.modeling_openai import (
+from transformers.modeling_openai import (
     CONFIG_NAME, WEIGHTS_NAME, OpenAIGPTConfig, OpenAIGPTModel,
     load_tf_weights_in_openai_gpt)
 

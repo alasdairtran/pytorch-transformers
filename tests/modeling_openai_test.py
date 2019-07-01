@@ -22,10 +22,10 @@ import unittest
 
 import pytest
 import torch
-from pytorch_transformers import (OpenAIGPTConfig,
+from transformers import (OpenAIGPTConfig,
                                      OpenAIGPTDoubleHeadsModel,
                                      OpenAIGPTLMHeadModel, OpenAIGPTModel)
-from pytorch_transformers.modeling_openai import \
+from transformers.modeling_openai import \
     PRETRAINED_MODEL_ARCHIVE_MAP
 
 
