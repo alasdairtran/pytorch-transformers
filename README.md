@@ -757,7 +757,7 @@ An example on how to use this class is given in the [`run_bert_extract_features.
   - the masked language modeling logits, and
   - the next sentence classification logits.
 
-An example on how to use this class is given in the [`run_lm_finetuning.py`](./examples/run_lm_finetuning.py) script which can be used to fine-tune the BERT language model on your specific different text corpus. This should improve model performance, if the language style is different from the original BERT training corpus (Wiki + BookCorpus).
+There are two examples on how to use this class is given in the [`lm_finetuning/`](./examples/lm_finetuning/) directory. The scripts in this directory can be used to fine-tune the BERT language model. This should improve model performance, if the language style is different from the original BERT training corpus (Wiki + BookCorpus).
 
 
 #### 3. `BertForMaskedLM`
@@ -1094,8 +1094,7 @@ The optimizer accepts the following arguments:
     Can be `'warmup_linear'`, `'warmup_constant'`, `'warmup_cosine'`, `'none'`, `None` or a `_LRSchedule` object (see below).
     If `None` or `'none'`, learning rate is always kept constant.
     Default : `'warmup_linear'`
-- `b1` : Adams b1. Default : `0.9`
-- `b2` : Adams b2. Default : `0.999`
+- `betas` : Adams betas. Default : `0.9, 0.999`
 - `e` : Adams epsilon. Default : `1e-6`
 - `weight_decay:` Weight decay. Default : `0.01`
 - `max_grad_norm` : Maximum norm for the gradients (`-1` means no clipping). Default : `1.0`
