@@ -272,13 +272,12 @@ class BertEmbeddings(nn.Module):
 
 
 class BertSelfAttention(nn.Module):
-    def __init__(self, config, output_attentions=False):
+    def __init__(self, config):
         super().__init__()
         if config.hidden_size % config.num_attention_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
                 "heads (%d)" % (config.hidden_size, config.num_attention_heads))
-        self.output_attentions = output_attentions
 
         self.num_attention_heads = config.num_attention_heads
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
@@ -349,10 +348,9 @@ class BertSelfOutput(nn.Module):
 
 
 class BertAttention(nn.Module):
-    def __init__(self, config, output_attentions=False):
+    def __init__(self, config):
         super(BertAttention, self).__init__()
-        self.output_attentions = output_attentions
-        self.self = BertSelfAttention(config, output_attentions=output_attentions)
+        self.self = BertSelfAttention(config)
         self.output = BertSelfOutput(config)
 
     def prune_heads(self, heads):
@@ -412,10 +410,9 @@ class BertOutput(nn.Module):
 
 
 class BertLayer(nn.Module):
-    def __init__(self, config, output_attentions=False):
+    def __init__(self, config):
         super(BertLayer, self).__init__()
-        self.output_attentions = output_attentions
-        self.attention = BertAttention(config, output_attentions=output_attentions)
+        self.attention = BertAttention(config)
         self.intermediate = BertIntermediate(config)
         self.output = BertOutput(config)
 
@@ -432,29 +429,24 @@ class BertLayer(nn.Module):
 
 
 class BertEncoder(nn.Module):
-    def __init__(self, config, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config):
         super(BertEncoder, self).__init__()
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
-        layer = BertLayer(config, output_attentions=output_attentions)
+        layer = BertLayer(config)
         self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(config.num_hidden_layers)])
 
     def forward(self, hidden_states, attention_mask, head_mask=None):
         all_hidden_states = []
         all_attentions = []
         for i, layer_module in enumerate(self.layer):
-            if self.output_hidden_states:
-                all_hidden_states.append(hidden_states)
+            all_hidden_states.append(hidden_states)
 
             layer_outputs = layer_module(hidden_states, attention_mask, head_mask[i])
             hidden_states = layer_outputs['context']
 
-            if self.output_attentions:
-                all_attentions.append(layer_outputs['attention'])
+            all_attentions.append(layer_outputs['attention'])
 
         # Add last layer
-        if self.output_hidden_states:
-            all_hidden_states.append(hidden_states)
+        all_hidden_states.append(hidden_states)
 
         outputs = {
             'context': hidden_states,
@@ -579,8 +571,6 @@ class BertModel(BertPreTrainedModel):
 
     Params:
         `config`: a BertConfig class instance with the configuration to build a new model
-        `output_attentions`: If True, also output attentions weights computed by the model at each layer. Default: False
-        `output_hidden_states`: If True, also output hidden states computed by the model at each layer. Default: False
 
     Inputs:
         `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
@@ -623,13 +613,10 @@ class BertModel(BertPreTrainedModel):
     all_encoder_layers, pooled_output = model(input_ids, token_type_ids, input_mask)
     ```
     """
-    def __init__(self, config, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config):
         super(BertModel, self).__init__(config)
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
         self.embeddings = BertEmbeddings(config)
-        self.encoder = BertEncoder(config, output_attentions=output_attentions,
-                                           output_hidden_states=output_hidden_states)
+        self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
         self.apply(self.init_weights)
 
@@ -701,8 +688,6 @@ class BertForPreTraining(BertPreTrainedModel):
 
     Params:
         `config`: a BertConfig class instance with the configuration to build a new model
-        `output_attentions`: If True, also output attentions weights computed by the model at each layer. Default: False
-        `output_hidden_states`: If True, also output hidden states computed by the model at each layer. Default: False
 
     Inputs:
         `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
@@ -747,13 +732,10 @@ class BertForPreTraining(BertPreTrainedModel):
     masked_lm_logits_scores, seq_relationship_logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
-    def __init__(self, config, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config):
         super(BertForPreTraining, self).__init__(config)
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
 
-        self.bert = BertModel(config, output_attentions=output_attentions,
-                                      output_hidden_states=output_hidden_states)
+        self.bert = BertModel(config)
         self.cls = BertPreTrainingHeads(config, self.bert.embeddings.word_embeddings.weight)
         self.apply(self.init_weights)
 
@@ -782,8 +764,6 @@ class BertForMaskedLM(BertPreTrainedModel):
 
     Params:
         `config`: a BertConfig class instance with the configuration to build a new model
-        `output_attentions`: If True, also output attentions weights computed by the model at each layer. Default: False
-        `output_hidden_states`: If True, also output hidden states computed by the model at each layer. Default: False
 
     Inputs:
         `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
@@ -822,12 +802,10 @@ class BertForMaskedLM(BertPreTrainedModel):
     masked_lm_logits_scores = model(input_ids, token_type_ids, input_mask)
     ```
     """
-    def __init__(self, config, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config):
         super(BertForMaskedLM, self).__init__(config)
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
 
-        self.bert = BertModel(config, output_attentions=output_attentions )
+        self.bert = BertModel(config)
         self.cls = BertOnlyMLMHead(config, self.bert.embeddings.word_embeddings.weight)
         self.apply(self.init_weights)
 
@@ -852,8 +830,6 @@ class BertForNextSentencePrediction(BertPreTrainedModel):
 
     Params:
         `config`: a BertConfig class instance with the configuration to build a new model
-        `output_attentions`: If True, also output attentions weights computed by the model at each layer. Default: False
-        `output_hidden_states`: If True, also output hidden states computed by the model at each layer. Default: False
 
     Inputs:
         `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
@@ -893,12 +869,10 @@ class BertForNextSentencePrediction(BertPreTrainedModel):
     seq_relationship_logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
-    def __init__(self, config, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config):
         super(BertForNextSentencePrediction, self).__init__(config)
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
 
-        self.bert = BertModel(config, output_attentions=output_attentions)
+        self.bert = BertModel(config)
         self.cls = BertOnlyNSPHead(config)
 
         self.apply(self.init_weights)
@@ -925,8 +899,6 @@ class BertForSequenceClassification(BertPreTrainedModel):
 
     Params:
         `config`: a BertConfig class instance with the configuration to build a new model
-        `output_attentions`: If True, also output attentions weights computed by the model at each layer. Default: False
-        `output_hidden_states`: If True, also output hidden states computed by the model at each layer. Default: False
         `num_labels`: the number of classes for the classifier. Default = 2.
 
     Inputs:
@@ -967,13 +939,11 @@ class BertForSequenceClassification(BertPreTrainedModel):
     logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
-    def __init__(self, config, num_labels=2, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config, num_labels=2):
         super(BertForSequenceClassification, self).__init__(config)
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
         self.num_labels = num_labels
 
-        self.bert = BertModel(config, output_attentions=output_attentions)
+        self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, num_labels)
 
@@ -1008,8 +978,6 @@ class BertForMultipleChoice(BertPreTrainedModel):
 
     Params:
         `config`: a BertConfig class instance with the configuration to build a new model
-        `output_attentions`: If True, also output attentions weights computed by the model at each layer. Default: False
-        `output_hidden_states`: If True, also output hidden states computed by the model at each layer. Default: False
         `num_choices`: the number of classes for the classifier. Default = 2.
 
     Inputs:
@@ -1049,13 +1017,11 @@ class BertForMultipleChoice(BertPreTrainedModel):
     logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
-    def __init__(self, config, num_choices=2, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config, num_choices=2):
         super(BertForMultipleChoice, self).__init__(config)
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
         self.num_choices = num_choices
 
-        self.bert = BertModel(config, output_attentions=output_attentions)
+        self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, 1)
 
@@ -1089,8 +1055,6 @@ class BertForTokenClassification(BertPreTrainedModel):
 
     Params:
         `config`: a BertConfig class instance with the configuration to build a new model
-        `output_attentions`: If True, also output attentions weights computed by the model at each layer. Default: False
-        `output_hidden_states`: If True, also output hidden states computed by the model at each layer. Default: False
         `num_labels`: the number of classes for the classifier. Default = 2.
 
     Inputs:
@@ -1131,13 +1095,11 @@ class BertForTokenClassification(BertPreTrainedModel):
     logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
-    def __init__(self, config, num_labels=2, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config, num_labels=2):
         super(BertForTokenClassification, self).__init__(config)
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
         self.num_labels = num_labels
 
-        self.bert = BertModel(config, output_attentions=output_attentions)
+        self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, num_labels)
 
@@ -1173,8 +1135,6 @@ class BertForQuestionAnswering(BertPreTrainedModel):
 
     Params:
         `config`: a BertConfig class instance with the configuration to build a new model
-        `output_attentions`: If True, also output attentions weights computed by the model at each layer. Default: False
-        `output_hidden_states`: If True, also output hidden states computed by the model at each layer. Default: False
 
     Inputs:
         `input_ids`: a torch.LongTensor of shape [batch_size, sequence_length]
@@ -1217,11 +1177,9 @@ class BertForQuestionAnswering(BertPreTrainedModel):
     start_logits, end_logits = model(input_ids, token_type_ids, input_mask)
     ```
     """
-    def __init__(self, config, output_attentions=False, output_hidden_states=False):
+    def __init__(self, config):
         super(BertForQuestionAnswering, self).__init__(config)
-        self.output_attentions = output_attentions
-        self.output_hidden_states = output_hidden_states
-        self.bert = BertModel(config, output_attentions=output_attentions)
+        self.bert = BertModel(config)
         self.qa_outputs = nn.Linear(config.hidden_size, 2)
 
         self.apply(self.init_weights)
