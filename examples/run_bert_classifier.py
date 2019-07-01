@@ -34,12 +34,12 @@ from torch.nn import CrossEntropyLoss, MSELoss
 
 from tensorboardX import SummaryWriter
 
-from pytorch_pretrained_bert.file_utils import WEIGHTS_NAME, CONFIG_NAME
+from pytorch_pretrained_bert import WEIGHTS_NAME, CONFIG_NAME
 from pytorch_pretrained_bert.modeling import BertForSequenceClassification
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam, WarmupLinearSchedule
 
-from run_classifier_dataset_utils import processors, output_modes, convert_examples_to_features, compute_metrics
+from utils_glue import processors, output_modes, convert_examples_to_features, compute_metrics
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -186,7 +186,7 @@ def main():
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train and not args.overwrite_output_dir:
-        raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))
+        raise ValueError("Output directory ({}) already exists and is not empty. Use --overwrite_output_dir to overcome.".format(args.output_dir))
     if not os.path.exists(args.output_dir) and args.local_rank in [-1, 0]:
         os.makedirs(args.output_dir)
 

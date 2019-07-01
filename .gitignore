@@ -123,3 +123,7 @@ tensorflow_code
 
 # Models
 models
+proc_data
+
+# examples
+examples/runs

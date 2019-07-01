@@ -31,7 +31,8 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from torch.nn.parameter import Parameter
 
-from .file_utils import cached_path, CONFIG_NAME, WEIGHTS_NAME
+from .file_utils import cached_path
+from .model_utils import Conv1D, CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig, PreTrainedModel, prune_conv1d_layer
 from .modeling import BertLayerNorm as LayerNorm
 
 logger = logging.getLogger(__name__)
@@ -41,31 +42,7 @@ PRETRAINED_MODEL_ARCHIVE_MAP = {"gpt2": "https://s3.amazonaws.com/models.hugging
 PRETRAINED_CONFIG_ARCHIVE_MAP = {"gpt2": "https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-config.json",
                                  "gpt2-medium": "https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-medium-config.json"}
 
-def prune_conv1d_layer(layer, index, dim=1):
-    """ Prune a Conv1D layer (a model parameters) to keep only entries in index.
-        A Conv1D work as a Linear layer (see e.g. BERT) but the weights are transposed.
-        Return the pruned layer as a new layer with requires_grad=True.
-        Used to remove heads.
-    """
-    index = index.to(layer.weight.device)
-    W = layer.weight.index_select(dim, index).clone().detach()
-    if dim == 0:
-        b = layer.bias.clone().detach()
-    else:
-        b = layer.bias[index].clone().detach()
-    new_size = list(layer.weight.size())
-    new_size[dim] = len(index)
-    new_layer = Conv1D(new_size[1], new_size[0]).to(layer.weight.device)
-    new_layer.weight.requires_grad = False
-    new_layer.weight.copy_(W.contiguous())
-    new_layer.weight.requires_grad = True
-    new_layer.bias.requires_grad = False
-    new_layer.bias.copy_(b.contiguous())
-    new_layer.bias.requires_grad = True
-    return new_layer
-
-
-def load_tf_weights_in_gpt2(model, gpt2_checkpoint_path):
+def load_tf_weights_in_gpt2(model, config, gpt2_checkpoint_path):
     """ Load tf checkpoints in a pytorch model
     """
     try:
@@ -123,9 +100,10 @@ def gelu(x):
     return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
 
 
-class GPT2Config(object):
+class GPT2Config(PretrainedConfig):
     """Configuration class to store the configuration of a `GPT2Model`.
     """
+    pretrained_config_archive_map = PRETRAINED_CONFIG_ARCHIVE_MAP
 
     def __init__(
         self,
@@ -193,54 +171,6 @@ class GPT2Config(object):
     @property
     def total_tokens_embeddings(self):
         return self.vocab_size + self.n_special
-
-    @classmethod
-    def from_dict(cls, json_object):
-        """Constructs a `GPT2Config` from a Python dictionary of parameters."""
-        config = GPT2Config(vocab_size_or_config_json_file=-1)
-        for key, value in json_object.items():
-            config.__dict__[key] = value
-        return config
-
-    @classmethod
-    def from_json_file(cls, json_file):
-        """Constructs a `GPT2Config` from a json file of parameters."""
-        with open(json_file, "r", encoding="utf-8") as reader:
-            text = reader.read()
-        return cls.from_dict(json.loads(text))
-
-    def __repr__(self):
-        return str(self.to_json_string())
-
-    def to_dict(self):
-        """Serializes this instance to a Python dictionary."""
-        output = copy.deepcopy(self.__dict__)
-        return output
-
-    def to_json_string(self):
-        """Serializes this instance to a JSON string."""
-        return json.dumps(self.to_dict(), indent=2, sort_keys=True) + "\n"
-
-    def to_json_file(self, json_file_path):
-        """ Save this instance to a json file."""
-        with open(json_file_path, "w", encoding='utf-8') as writer:
-            writer.write(self.to_json_string())
-
-
-class Conv1D(nn.Module):
-    def __init__(self, nf, nx):
-        super(Conv1D, self).__init__()
-        self.nf = nf
-        w = torch.empty(nx, nf)
-        nn.init.normal_(w, std=0.02)
-        self.weight = Parameter(w)
-        self.bias = Parameter(torch.zeros(nf))
-
-    def forward(self, x):
-        size_out = x.size()[:-1] + (self.nf,)
-        x = torch.addmm(self.bias, x.view(-1, x.size(-1)), self.weight)
-        x = x.view(*size_out)
-        return x
 
 
 class Attention(nn.Module):
@@ -426,22 +356,18 @@ class GPT2MultipleChoiceHead(nn.Module):
         return multiple_choice_logits
 
 
-class GPT2PreTrainedModel(nn.Module):
+class GPT2PreTrainedModel(PreTrainedModel):
     """ An abstract class to handle weights initialization and
         a simple interface for dowloading and loading pretrained models.
     """
+    config_class = GPT2Config
+    pretrained_model_archive_map = PRETRAINED_MODEL_ARCHIVE_MAP
+    pretrained_config_archive_map = PRETRAINED_CONFIG_ARCHIVE_MAP
+    load_tf_weights = load_tf_weights_in_gpt2
+    base_model_prefix = "transformer"
 
-    def __init__(self, config, *inputs, **kwargs):
-        super(GPT2PreTrainedModel, self).__init__()
-        if not isinstance(config, GPT2Config):
-            raise ValueError(
-                "Parameter config in `{}(config)` should be an instance of class `GPT2Config`. "
-                "To create a model from a pretrained model use "
-                "`model = {}.from_pretrained(PRETRAINED_MODEL_NAME)`".format(
-                    self.__class__.__name__, self.__class__.__name__
-                )
-            )
-        self.config = config
+    def __init__(self, *inputs, **kwargs):
+        super(GPT2PreTrainedModel, self).__init__(*inputs, **kwargs)
 
     def init_weights(self, module):
         """ Initialize the weights.
@@ -477,130 +403,130 @@ class GPT2PreTrainedModel(nn.Module):
             state_dict: an optional state dictionary (collections.OrderedDict object) to use instead of pre-trained models
             *inputs, **kwargs: additional input for the specific GPT2 class
         """
-        state_dict = kwargs.get('state_dict', None)
-        kwargs.pop('state_dict', None)
-        cache_dir = kwargs.get('cache_dir', None)
-        kwargs.pop('cache_dir', None)
-        from_tf = kwargs.get('from_tf', False)
-        kwargs.pop('from_tf', None)
+        # state_dict = kwargs.get('state_dict', None)
+        # kwargs.pop('state_dict', None)
+        # cache_dir = kwargs.get('cache_dir', None)
+        # kwargs.pop('cache_dir', None)
+        # from_tf = kwargs.get('from_tf', False)
+        # kwargs.pop('from_tf', None)
         num_special_tokens = kwargs.get('num_special_tokens', None)
         kwargs.pop('num_special_tokens', None)
 
-        if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
-            archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
-            config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[pretrained_model_name_or_path]
-        else:
-            archive_file = os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
-            config_file = os.path.join(pretrained_model_name_or_path, CONFIG_NAME)
-        # redirect to the cache, if necessary
-        try:
-            resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
-        except EnvironmentError:
-            if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
-                logger.error(
-                    "Couldn't reach server at '{}' to download pretrained weights.".format(
-                        archive_file))
-            else:
-                logger.error(
-                    "Model name '{}' was not found in model name list ({}). "
-                    "We assumed '{}' was a path or url but couldn't find file {} "
-                    "at this path or url.".format(
-                        pretrained_model_name_or_path, ", ".join(PRETRAINED_MODEL_ARCHIVE_MAP.keys()), pretrained_model_name_or_path,
-                        archive_file
-                    )
-                )
-            return None
-        try:
-            resolved_config_file = cached_path(config_file, cache_dir=cache_dir)
-        except EnvironmentError:
-            if pretrained_model_name_or_path in PRETRAINED_CONFIG_ARCHIVE_MAP:
-                logger.error(
-                    "Couldn't reach server at '{}' to download pretrained model configuration file.".format(
-                        config_file))
-            else:
-                logger.error(
-                    "Model name '{}' was not found in model name list ({}). "
-                    "We assumed '{}' was a path or url but couldn't find file {} "
-                    "at this path or url.".format(
-                        pretrained_model_name_or_path, ", ".join(PRETRAINED_CONFIG_ARCHIVE_MAP.keys()), pretrained_model_name_or_path,
-                        config_file
-                    )
-                )
-            return None
-        if resolved_archive_file == archive_file and resolved_config_file == config_file:
-            logger.info("loading weights file {}".format(archive_file))
-            logger.info("loading configuration file {}".format(config_file))
-        else:
-            logger.info("loading weights file {} from cache at {}".format(
-                archive_file, resolved_archive_file))
-            logger.info("loading configuration file {} from cache at {}".format(
-                config_file, resolved_config_file))
-        # Load config
-        config = GPT2Config.from_json_file(resolved_config_file)
-        logger.info("Model config {}".format(config))
-        # Instantiate model.
-        model = cls(config, *inputs, **kwargs)
-        if state_dict is None and not from_tf:
-            state_dict = torch.load(resolved_archive_file, map_location='cpu')
-        if from_tf:
-            # Directly load from a TensorFlow checkpoint (stored as NumPy array)
-            return load_tf_weights_in_gpt2(model, resolved_archive_file)
+        # if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
+        #     archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
+        #     config_file = PRETRAINED_CONFIG_ARCHIVE_MAP[pretrained_model_name_or_path]
+        # else:
+        #     archive_file = os.path.join(pretrained_model_name_or_path, WEIGHTS_NAME)
+        #     config_file = os.path.join(pretrained_model_name_or_path, CONFIG_NAME)
+        # # redirect to the cache, if necessary
+        # try:
+        #     resolved_archive_file = cached_path(archive_file, cache_dir=cache_dir)
+        # except EnvironmentError:
+        #     if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
+        #         logger.error(
+        #             "Couldn't reach server at '{}' to download pretrained weights.".format(
+        #                 archive_file))
+        #     else:
+        #         logger.error(
+        #             "Model name '{}' was not found in model name list ({}). "
+        #             "We assumed '{}' was a path or url but couldn't find file {} "
+        #             "at this path or url.".format(
+        #                 pretrained_model_name_or_path, ", ".join(PRETRAINED_MODEL_ARCHIVE_MAP.keys()), pretrained_model_name_or_path,
+        #                 archive_file
+        #             )
+        #         )
+        #     return None
+        # try:
+        #     resolved_config_file = cached_path(config_file, cache_dir=cache_dir)
+        # except EnvironmentError:
+        #     if pretrained_model_name_or_path in PRETRAINED_CONFIG_ARCHIVE_MAP:
+        #         logger.error(
+        #             "Couldn't reach server at '{}' to download pretrained model configuration file.".format(
+        #                 config_file))
+        #     else:
+        #         logger.error(
+        #             "Model name '{}' was not found in model name list ({}). "
+        #             "We assumed '{}' was a path or url but couldn't find file {} "
+        #             "at this path or url.".format(
+        #                 pretrained_model_name_or_path, ", ".join(PRETRAINED_CONFIG_ARCHIVE_MAP.keys()), pretrained_model_name_or_path,
+        #                 config_file
+        #             )
+        #         )
+        #     return None
+        # if resolved_archive_file == archive_file and resolved_config_file == config_file:
+        #     logger.info("loading weights file {}".format(archive_file))
+        #     logger.info("loading configuration file {}".format(config_file))
+        # else:
+        #     logger.info("loading weights file {} from cache at {}".format(
+        #         archive_file, resolved_archive_file))
+        #     logger.info("loading configuration file {} from cache at {}".format(
+        #         config_file, resolved_config_file))
+        # # Load config
+        # config = GPT2Config.from_json_file(resolved_config_file)
+        # logger.info("Model config {}".format(config))
+        # # Instantiate model.
+        # model = cls(config, *inputs, **kwargs)
+        # if state_dict is None and not from_tf:
+        #     state_dict = torch.load(resolved_archive_file, map_location='cpu')
+        # if from_tf:
+        #     # Directly load from a TensorFlow checkpoint (stored as NumPy array)
+        #     return load_tf_weights_in_gpt2(model, resolved_archive_file)
 
-        old_keys = []
-        new_keys = []
-        for key in state_dict.keys():
-            new_key = None
-            if key.endswith(".g"):
-                new_key = key[:-2] + ".weight"
-            elif key.endswith(".b"):
-                new_key = key[:-2] + ".bias"
-            elif key.endswith(".w"):
-                new_key = key[:-2] + ".weight"
-            if new_key:
-                old_keys.append(key)
-                new_keys.append(new_key)
-        for old_key, new_key in zip(old_keys, new_keys):
-            state_dict[new_key] = state_dict.pop(old_key)
+        # old_keys = []
+        # new_keys = []
+        # for key in state_dict.keys():
+        #     new_key = None
+        #     if key.endswith(".g"):
+        #         new_key = key[:-2] + ".weight"
+        #     elif key.endswith(".b"):
+        #         new_key = key[:-2] + ".bias"
+        #     elif key.endswith(".w"):
+        #         new_key = key[:-2] + ".weight"
+        #     if new_key:
+        #         old_keys.append(key)
+        #         new_keys.append(new_key)
+        # for old_key, new_key in zip(old_keys, new_keys):
+        #     state_dict[new_key] = state_dict.pop(old_key)
 
-        missing_keys = []
-        unexpected_keys = []
-        error_msgs = []
-        # copy state_dict so _load_from_state_dict can modify it
-        metadata = getattr(state_dict, "_metadata", None)
-        state_dict = state_dict.copy()
-        if metadata is not None:
-            state_dict._metadata = metadata
+        # missing_keys = []
+        # unexpected_keys = []
+        # error_msgs = []
+        # # copy state_dict so _load_from_state_dict can modify it
+        # metadata = getattr(state_dict, "_metadata", None)
+        # state_dict = state_dict.copy()
+        # if metadata is not None:
+        #     state_dict._metadata = metadata
 
-        def load(module, prefix=""):
-            local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
-            module._load_from_state_dict(
-                state_dict, prefix, local_metadata, True, missing_keys, unexpected_keys, error_msgs
-            )
-            for name, child in module._modules.items():
-                if child is not None:
-                    load(child, prefix + name + ".")
+        # def load(module, prefix=""):
+        #     local_metadata = {} if metadata is None else metadata.get(prefix[:-1], {})
+        #     module._load_from_state_dict(
+        #         state_dict, prefix, local_metadata, True, missing_keys, unexpected_keys, error_msgs
+        #     )
+        #     for name, child in module._modules.items():
+        #         if child is not None:
+        #             load(child, prefix + name + ".")
 
-        start_model = model
-        if hasattr(model, "transformer") and all(not s.startswith('transformer.') for s in state_dict.keys()):
-            start_model = model.transformer
-        load(start_model, prefix="")
+        # start_model = model
+        # if hasattr(model, "transformer") and all(not s.startswith('transformer.') for s in state_dict.keys()):
+        #     start_model = model.transformer
+        # load(start_model, prefix="")
 
-        if len(missing_keys) > 0:
-            logger.info(
-                "Weights of {} not initialized from pretrained model: {}".format(model.__class__.__name__, missing_keys)
-            )
-        if len(unexpected_keys) > 0:
-            logger.info(
-                "Weights from pretrained model not used in {}: {}".format(model.__class__.__name__, unexpected_keys)
-            )
-        if len(error_msgs) > 0:
-            raise RuntimeError(
-                "Error(s) in loading state_dict for {}:\n\t{}".format(model.__class__.__name__, "\n\t".join(error_msgs))
-            )
+        # if len(missing_keys) > 0:
+        #     logger.info(
+        #         "Weights of {} not initialized from pretrained model: {}".format(model.__class__.__name__, missing_keys)
+        #     )
+        # if len(unexpected_keys) > 0:
+        #     logger.info(
+        #         "Weights from pretrained model not used in {}: {}".format(model.__class__.__name__, unexpected_keys)
+        #     )
+        # if len(error_msgs) > 0:
+        #     raise RuntimeError(
+        #         "Error(s) in loading state_dict for {}:\n\t{}".format(model.__class__.__name__, "\n\t".join(error_msgs))
+        #     )
 
         # Add additional embeddings for special tokens if needed
         # This step also make sure we are still sharing the output and input embeddings after loading weights
-        model.set_num_special_tokens(num_special_tokens if num_special_tokens is not None else config.n_special)
+        model.set_num_special_tokens(num_special_tokens)
         return model
 
 
@@ -678,9 +604,9 @@ class GPT2Model(GPT2PreTrainedModel):
 
         self.apply(self.init_weights)
 
-    def set_num_special_tokens(self, num_special_tokens):
+    def set_num_special_tokens(self, num_special_tokens=None):
         " Update input embeddings with new embedding matrice if needed "
-        if self.config.n_special == num_special_tokens:
+        if num_special_tokens is None or self.config.n_special == num_special_tokens:
             return
         # Update config
         self.config.n_special = num_special_tokens
@@ -722,7 +648,7 @@ class GPT2Model(GPT2PreTrainedModel):
         if head_mask is not None:
             if head_mask.dim() == 1:
                 head_mask = head_mask.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
-                head_mask = head_mask.expand_as(self.config.n_layer, -1, -1, -1, -1)
+                head_mask = head_mask.expand(self.config.n_layer, -1, -1, -1, -1)
             elif head_mask.dim() == 2:
                 head_mask = head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)  # We can specify head_mask for each layer
             head_mask = head_mask.to(dtype=next(self.parameters()).dtype) # switch to fload if need + fp16 compatibility
