@@ -273,7 +273,7 @@ class BertEmbeddings(nn.Module):
 
 class BertSelfAttention(nn.Module):
     def __init__(self, config, output_attentions=False):
-        super(BertSelfAttention, self).__init__()
+        super().__init__()
         if config.hidden_size % config.num_attention_heads != 0:
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
@@ -327,7 +327,10 @@ class BertSelfAttention(nn.Module):
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
         context_layer = context_layer.view(*new_context_layer_shape)
 
-        outputs = [context_layer, attention_probs] if self.output_attentions else [context_layer]
+        outputs = {
+            'context': context_layer,
+            'attention': attention_probs,
+        }
         return outputs
 
 
@@ -371,8 +374,11 @@ class BertAttention(nn.Module):
 
     def forward(self, input_tensor, attention_mask, head_mask=None):
         self_outputs = self.self(input_tensor, attention_mask, head_mask)
-        attention_output = self.output(self_outputs[0], input_tensor)
-        outputs = [attention_output] + self_outputs[1:]  # add attentions if we output them
+        attention_output = self.output(self_outputs['context'], input_tensor)
+        outputs = {
+            'context': attention_output,
+            'attention': self_outputs['attention']
+        }
         return outputs
 
 
@@ -415,10 +421,13 @@ class BertLayer(nn.Module):
 
     def forward(self, hidden_states, attention_mask, head_mask=None):
         attention_outputs = self.attention(hidden_states, attention_mask, head_mask)
-        attention_output = attention_outputs[0]
+        attention_output = attention_outputs['context']
         intermediate_output = self.intermediate(attention_output)
         layer_output = self.output(intermediate_output, attention_output)
-        outputs = [layer_output] + attention_outputs[1:]  # add attentions if we output them
+        outputs = {
+            'context': layer_output,
+            'attention': attention_outputs['attention']
+        }
         return outputs
 
 
@@ -438,21 +447,21 @@ class BertEncoder(nn.Module):
                 all_hidden_states.append(hidden_states)
 
             layer_outputs = layer_module(hidden_states, attention_mask, head_mask[i])
-            hidden_states = layer_outputs[0]
+            hidden_states = layer_outputs['context']
 
             if self.output_attentions:
-                all_attentions.append(layer_outputs[1])
+                all_attentions.append(layer_outputs['attention'])
 
         # Add last layer
         if self.output_hidden_states:
             all_hidden_states.append(hidden_states)
 
-        outputs = [hidden_states]
-        if self.output_hidden_states:
-            outputs.append(all_hidden_states)
-        if self.output_attentions:
-            outputs.append(all_attentions)
-        return outputs  # outputs, (hidden states), (attentions)
+        outputs = {
+            'context': hidden_states,
+            'hidden': all_hidden_states,
+            'attention': all_attentions
+        }
+        return outputs
 
 
 class BertPooler(nn.Module):
@@ -671,11 +680,17 @@ class BertModel(BertPreTrainedModel):
         encoder_outputs = self.encoder(embedding_output,
                                        extended_attention_mask,
                                        head_mask=head_mask)
-        sequence_output = encoder_outputs[0]
+        sequence_output = encoder_outputs['context']
         pooled_output = self.pooler(sequence_output)
 
-        outputs = [sequence_output, pooled_output] + encoder_outputs[1:]  # add hidden_states and attentions if they are here
-        return outputs  # sequence_output, pooled_output, (hidden_states), (attentions)
+        outputs = {
+            'context': sequence_output,
+            'pooled': pooled_output,
+            'hidden': encoder_outputs['hidden'],
+            'attention': encoder_outputs['attention'],
+        }
+
+        return outputs
 
 
 class BertForPreTraining(BertPreTrainedModel):
