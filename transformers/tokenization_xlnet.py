@@ -39,11 +39,12 @@ SPECIAL_TOKENS_NAME = 'special_tokens.txt'
 SPIECE_UNDERLINE = u'▁'
 
 # Segments (not really needed)
-SEG_ID_A   = 0
-SEG_ID_B   = 1
+SEG_ID_A = 0
+SEG_ID_B = 1
 SEG_ID_CLS = 2
 SEG_ID_SEP = 3
 SEG_ID_PAD = 4
+
 
 class XLNetTokenizer(object):
     """
@@ -52,16 +53,17 @@ class XLNetTokenizer(object):
     """
     # Tokens
     special_symbols = {
-        "<unk>"  : 0,
-        "<s>"    : 1,
-        "</s>"   : 2,
-        "<cls>"  : 3,
-        "<sep>"  : 4,
-        "<pad>"  : 5,
-        "<mask>" : 6,
-        "<eod>"  : 7,
-        "<eop>"  : 8,
+        "<unk>": 0,
+        "<s>": 1,
+        "</s>": 2,
+        "<cls>": 3,
+        "<sep>": 4,
+        "<pad>": 5,
+        "<mask>": 6,
+        "<eod>": 7,
+        "<eop>": 8,
     }
+
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, cache_dir=None, *inputs, **kwargs):
         """
@@ -82,12 +84,15 @@ class XLNetTokenizer(object):
                                "but you may want to check this behavior.")
                 kwargs['do_lower_case'] = True
         else:
-            vocab_file = os.path.join(pretrained_model_name_or_path, VOCAB_NAME)
-            special_tokens_file = os.path.join(pretrained_model_name_or_path, SPECIAL_TOKENS_NAME)
+            vocab_file = os.path.join(
+                pretrained_model_name_or_path, VOCAB_NAME)
+            special_tokens_file = os.path.join(
+                pretrained_model_name_or_path, SPECIAL_TOKENS_NAME)
             if not os.path.exists(special_tokens_file):
                 special_tokens_file = None
             else:
-                logger.info("loading special tokens file {}".format(special_tokens_file))
+                logger.info("loading special tokens file {}".format(
+                    special_tokens_file))
         # redirect to the cache, if necessary
         try:
             resolved_vocab_file = cached_path(vocab_file, cache_dir=cache_dir)
@@ -113,10 +118,12 @@ class XLNetTokenizer(object):
                 vocab_file, resolved_vocab_file))
         # Instantiate tokenizer.
         if special_tokens_file and 'special_tokens' not in kwargs:
-            special_tokens = open(special_tokens_file, encoding='utf-8').read().split('\n')[:-1]
+            special_tokens = open(special_tokens_file,
+                                  encoding='utf-8').read().split('\n')[:-1]
         else:
             special_tokens = kwargs.pop('special_tokens', [])
-        tokenizer = cls(resolved_vocab_file, special_tokens=special_tokens, *inputs, **kwargs)
+        tokenizer = cls(resolved_vocab_file,
+                        special_tokens=special_tokens, *inputs, **kwargs)
         return tokenizer
 
     def __init__(self, vocab_file, special_tokens=None, max_len=None,
@@ -206,8 +213,10 @@ class XLNetTokenizer(object):
             self.special_tokens = {}
             self.special_tokens_decoder = {}
             return
-        self.special_tokens = dict((tok, len(self.sp_model) + i) for i, tok in enumerate(special_tokens))
-        self.special_tokens_decoder = {v:k for k, v in self.special_tokens.items()}
+        self.special_tokens = dict((tok, len(self.sp_model) + i)
+                                   for i, tok in enumerate(special_tokens))
+        self.special_tokens_decoder = {
+            v: k for k, v in self.special_tokens.items()}
         logger.info("Special tokens: %s", str(self.special_tokens))
 
     def preprocess_text(self, inputs):
@@ -222,7 +231,8 @@ class XLNetTokenizer(object):
 
         if not self.keep_accents:
             outputs = unicodedata.normalize('NFKD', outputs)
-            outputs = ''.join([c for c in outputs if not unicodedata.combining(c)])
+            outputs = ''.join(
+                [c for c in outputs if not unicodedata.combining(c)])
         if self.do_lower_case:
             outputs = outputs.lower()
 
@@ -284,7 +294,8 @@ class XLNetTokenizer(object):
             logger.warning(
                 "Token indices sequence length is longer than the specified maximum "
                 " sequence length for this XLNet model ({} > {}). Running this"
-                " sequence through the model will result in indexing errors".format(len(ids), self.max_len)
+                " sequence through the model will result in indexing errors".format(
+                    len(ids), self.max_len)
             )
         return ids
 
@@ -312,13 +323,14 @@ class XLNetTokenizer(object):
 
     def decode(self, ids, skip_special_tokens=False, clean_up_tokenization_spaces=True):
         """Converts a sequence of ids in a string."""
-        tokens = self.convert_ids_to_tokens(ids, skip_special_tokens=skip_special_tokens)
+        tokens = self.convert_ids_to_tokens(
+            ids, skip_special_tokens=skip_special_tokens)
         out_string = ''.join(tokens)
         if clean_up_tokenization_spaces:
             out_string = out_string.strip().replace('<unk>', '')
             out_string = out_string.replace(' .', '.').replace(' ?', '?').replace(' !', '!').replace(' ,', ','
-                    ).replace(" ' ", "'").replace(" n't", "n't").replace(" 'm", "'m").replace(" do not", " don't"
-                    ).replace(" 's", "'s").replace(" 've", "'ve").replace(" 're", "'re")
+                                                                                                     ).replace(" ' ", "'").replace(" n't", "n't").replace(" 'm", "'m").replace(" do not", " don't"
+                                                                                                                                                                               ).replace(" 's", "'s").replace(" 've", "'ve").replace(" 're", "'re")
         return out_string
 
     def save_vocabulary(self, vocab_path):
@@ -326,7 +338,8 @@ class XLNetTokenizer(object):
             to a directory.
         """
         if not os.path.isdir(vocab_path):
-            logger.error("Vocabulary path ({}) should be a directory".format(vocab_path))
+            logger.error(
+                "Vocabulary path ({}) should be a directory".format(vocab_path))
             return
         out_vocab_file = os.path.join(vocab_path, VOCAB_NAME)
         special_tokens_file = os.path.join(vocab_path, SPECIAL_TOKENS_NAME)

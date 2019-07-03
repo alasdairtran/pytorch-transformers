@@ -1,6 +1,5 @@
 from transformers.modeling_openai import (OpenAIGPTDoubleHeadsModel,
-                                                     OpenAIGPTLMHeadModel,
-                                                     OpenAIGPTModel)
+                                          OpenAIGPTLMHeadModel, OpenAIGPTModel)
 from transformers.tokenization_openai import OpenAIGPTTokenizer
 
 # Dependecies that are not specified in global hubconf.py
@@ -54,7 +53,7 @@ def _append_from_pretrained_docstring(docstr):
 def openAIGPTTokenizer(*args, **kwargs):
     """
     Instantiate a BPE tokenizer for OpenAI GPT from a pre-trained/customized vocab file.
-	Peculiarities:
+        Peculiarities:
         - lower case all inputs
         - uses SpaCy tokenizer ('en' model) and ftfy for pre-BPE tokenization if they are installed, fallback to BERT's BasicTokenizer if not.
         - argument special_tokens and function set_special_tokens:
@@ -65,19 +64,19 @@ def openAIGPTTokenizer(*args, **kwargs):
                                    or one of pre-trained vocab configs below.
                                        * openai-gpt
     Keyword args:
-	special_tokens: Special tokens in vocabulary that are not pretrained ([SEP], [CLS]...)
-					Default: None
-	max_len: An artificial maximum length to truncate tokenized sequences to;
-        	 Effective maximum length is always the minimum of this
+        special_tokens: Special tokens in vocabulary that are not pretrained ([SEP], [CLS]...)
+                                        Default: None
+        max_len: An artificial maximum length to truncate tokenized sequences to;
+                 Effective maximum length is always the minimum of this
              value (if specified) and the underlying BERT model's
              sequence length.
-			 Default: None
+                         Default: None
 
     Example:
-		>>> import torch
+                >>> import torch
         >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'openAIGPTTokenizer', 'openai-gpt')
 
-		>>> text = "Who was Jim Henson ? Jim Henson was a puppeteer"
+                >>> text = "Who was Jim Henson ? Jim Henson was a puppeteer"
         >>> tokenized_text = tokenizer.tokenize(text)
         >>> indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
         [763, 509, 4265, 2298, 945, 257, 4265, 2298, 945, 509, 246, 10148, 39041, 483]
@@ -90,12 +89,12 @@ def openAIGPTTokenizer(*args, **kwargs):
 def openAIGPTModel(*args, **kwargs):
     """
     OpenAIGPTModel is the basic OpenAI GPT Transformer model based on
-	identical stacked masked self-attention blocks and pre-trained
-	on large scale dataset using language modeling signal.
+        identical stacked masked self-attention blocks and pre-trained
+        on large scale dataset using language modeling signal.
 
     Example:
         # Load the tokenizer
-		>>> import torch
+                >>> import torch
         >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'openAIGPTTokenizer', 'openai-gpt')
 
         #  Prepare tokenized input
@@ -120,9 +119,9 @@ def openAIGPTModel(*args, **kwargs):
 def openAIGPTLMHeadModel(*args, **kwargs):
     """
     OpenAIGPTLMHeadModel is the OpenAI GPT Transformer model with the
-	tied (pre-trained) language modeling head on top.
+        tied (pre-trained) language modeling head on top.
 
-	Example:
+        Example:
         # Load the tokenizer
         >>> import torch
         >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'openAIGPTTokenizer', 'openai-gpt')
@@ -141,9 +140,9 @@ def openAIGPTLMHeadModel(*args, **kwargs):
         >>> with torch.no_grad():
                 predictions = model(tokens_tensor)
 
-		# Get the predicted last token
-		>>> predicted_index = torch.argmax(predictions[0, -1, :]).item()
-		>>> predicted_token = tokenizer.convert_ids_to_tokens([predicted_index])[0]
+                # Get the predicted last token
+                >>> predicted_index = torch.argmax(predictions[0, -1, :]).item()
+                >>> predicted_token = tokenizer.convert_ids_to_tokens([predicted_index])[0]
         '.</w>'
     """
     model = OpenAIGPTLMHeadModel.from_pretrained(*args, **kwargs)
@@ -154,10 +153,10 @@ def openAIGPTLMHeadModel(*args, **kwargs):
 def openAIGPTDoubleHeadsModel(*args, **kwargs):
     """
     OpenAIGPTDoubleHeadsModel is the OpenAI GPT Transformer model with the
-	tied (pre-trained) language modeling head and a multiple choice
-	classification head (only initialized, not pre-trained).
+        tied (pre-trained) language modeling head and a multiple choice
+        classification head (only initialized, not pre-trained).
 
-	Example:
+        Example:
         # Load the tokenizer
         >>> import torch
         >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'openAIGPTTokenizer', 'openai-gpt')

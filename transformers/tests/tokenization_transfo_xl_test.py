@@ -22,8 +22,8 @@ from io import open
 
 import pytest
 
-from transformers.tokenization_transfo_xl import (
-    PRETRAINED_VOCAB_ARCHIVE_MAP, TransfoXLTokenizer)
+from transformers.tokenization_transfo_xl import (PRETRAINED_VOCAB_ARCHIVE_MAP,
+                                                  TransfoXLTokenizer)
 
 
 class TransfoXLTokenizationTest(unittest.TestCase):
@@ -56,7 +56,6 @@ class TransfoXLTokenizationTest(unittest.TestCase):
         self.assertListEqual(
             tokenizer.convert_tokens_to_ids(tokens), [0, 4, 8, 7])
 
-
     def test_full_tokenizer_lower(self):
         tokenizer = TransfoXLTokenizer(lower_case=True)
 
@@ -75,9 +74,11 @@ class TransfoXLTokenizationTest(unittest.TestCase):
     def test_tokenizer_from_pretrained(self):
         cache_dir = "/tmp/pytorch_pretrained_bert_test/"
         for model_name in list(PRETRAINED_VOCAB_ARCHIVE_MAP.keys())[:1]:
-            tokenizer = TransfoXLTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+            tokenizer = TransfoXLTokenizer.from_pretrained(
+                model_name, cache_dir=cache_dir)
             shutil.rmtree(cache_dir)
             self.assertIsNotNone(tokenizer)
+
 
 if __name__ == '__main__':
     unittest.main()

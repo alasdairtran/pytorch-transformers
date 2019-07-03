@@ -58,16 +58,16 @@ setup(
                       'regex',
                       'sentencepiece'],
     entry_points={
-      'console_scripts': [
-        "transformers=transformers.__main__:main",
-      ]
+        'console_scripts': [
+            "transformers=transformers.__main__:main",
+        ]
     },
     # python_requires='>=3.5.0',
     tests_require=['pytest'],
     classifiers=[
-          'Intended Audience :: Science/Research',
-          'License :: OSI Approved :: Apache Software License',
-          'Programming Language :: Python :: 3',
-          'Topic :: Scientific/Engineering :: Artificial Intelligence',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: Apache Software License',
+        'Programming Language :: Python :: 3',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
     ],
 )

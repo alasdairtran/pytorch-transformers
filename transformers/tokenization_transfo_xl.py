@@ -50,6 +50,7 @@ PRETRAINED_CORPUS_ARCHIVE_MAP = {
 }
 CORPUS_NAME = 'corpus.bin'
 
+
 class TransfoXLTokenizer(object):
     """
     Transformer-XL tokenizer adapted from Vocab class in https://github.com/kimiyoung/transformer-xl
@@ -64,7 +65,8 @@ class TransfoXLTokenizer(object):
             vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[pretrained_model_name_or_path]
         else:
             if os.path.isdir(pretrained_model_name_or_path):
-                vocab_file = os.path.join(pretrained_model_name_or_path, VOCAB_NAME)
+                vocab_file = os.path.join(
+                    pretrained_model_name_or_path, VOCAB_NAME)
             else:
                 vocab_file = pretrained_model_name_or_path
         # redirect to the cache, if necessary
@@ -110,7 +112,8 @@ class TransfoXLTokenizer(object):
         self.never_split = never_split
 
     def count_file(self, path, verbose=False, add_eos=False):
-        if verbose: print('counting file {} ...'.format(path))
+        if verbose:
+            print('counting file {} ...'.format(path))
         assert os.path.exists(path)
 
         sents = []
@@ -128,7 +131,8 @@ class TransfoXLTokenizer(object):
         """
             sents : a list of sentences, each a list of tokenized symbols
         """
-        if verbose: print('counting {} sents ...'.format(len(sents)))
+        if verbose:
+            print('counting {} sents ...'.format(len(sents)))
         for idx, symbols in enumerate(sents):
             if verbose and idx > 0 and idx % 500000 == 0:
                 print('    line {}'.format(idx))
@@ -172,15 +176,17 @@ class TransfoXLTokenizer(object):
                 self.add_special(sym)
 
             for sym, cnt in self.counter.most_common(self.max_size):
-                if cnt < self.min_freq: break
+                if cnt < self.min_freq:
+                    break
                 self.add_symbol(sym)
 
             print('final vocab size {} from {} unique tokens'.format(
                 len(self), len(self.counter)))
 
     def encode_file(self, path, ordered=False, verbose=False, add_eos=True,
-            add_double_eos=False):
-        if verbose: print('encoding file {} ...'.format(path))
+                    add_double_eos=False):
+        if verbose:
+            print('encoding file {} ...'.format(path))
         assert os.path.exists(path)
         encoded = []
         with open(path, 'r', encoding='utf-8') as f:
@@ -188,7 +194,7 @@ class TransfoXLTokenizer(object):
                 if verbose and idx > 0 and idx % 500000 == 0:
                     print('    line {}'.format(idx))
                 symbols = self.tokenize(line, add_eos=add_eos,
-                    add_double_eos=add_double_eos)
+                                        add_double_eos=add_double_eos)
                 encoded.append(self.convert_to_tensor(symbols))
 
         if ordered:
@@ -197,7 +203,8 @@ class TransfoXLTokenizer(object):
         return encoded
 
     def encode_sents(self, sents, ordered=False, verbose=False):
-        if verbose: print('encoding {} sents ...'.format(len(sents)))
+        if verbose:
+            print('encoding {} sents ...'.format(len(sents)))
         encoded = []
         for idx, symbols in enumerate(sents):
             if verbose and idx > 0 and idx % 500000 == 0:
@@ -221,7 +228,8 @@ class TransfoXLTokenizer(object):
             self.sym2idx[sym] = len(self.idx2sym) - 1
 
     def get_sym(self, idx):
-        assert 0 <= idx < len(self), 'Index {} out of vocabulary range'.format(idx)
+        assert 0 <= idx < len(
+            self), 'Index {} out of vocabulary range'.format(idx)
         return self.idx2sym[idx]
 
     def get_idx(self, sym):
@@ -238,7 +246,8 @@ class TransfoXLTokenizer(object):
             elif '<UNK>' in self.sym2idx:
                 return self.sym2idx['<UNK>']
             else:
-                raise ValueError('Token not in vocabulary and no <unk> token in vocabulary for replacement')
+                raise ValueError(
+                    'Token not in vocabulary and no <unk> token in vocabulary for replacement')
 
     def convert_ids_to_tokens(self, indices):
         """Converts a sequence of indices in symbols using the vocab."""
@@ -273,7 +282,7 @@ class TransfoXLTokenizer(object):
         else:
             symbols = line.split(self.delimiter)
 
-        if add_double_eos: # lm1b
+        if add_double_eos:  # lm1b
             return ['<S>'] + symbols + ['<S>']
         elif add_eos:
             return symbols + ['<eos>']
@@ -305,7 +314,8 @@ class LMOrderedIterator(object):
         self.n_batch = (self.n_step + self.bptt - 1) // self.bptt
 
     def get_batch(self, i, bptt=None):
-        if bptt is None: bptt = self.bptt
+        if bptt is None:
+            bptt = self.bptt
         seq_len = min(bptt, self.data.size(0) - 1 - i)
 
         end_idx = i + seq_len
@@ -421,7 +431,7 @@ class LMShuffledIterator(object):
 
 class LMMultiFileIterator(LMShuffledIterator):
     def __init__(self, paths, vocab, bsz, bptt, device='cpu', ext_len=None,
-        shuffle=False):
+                 shuffle=False):
 
         self.paths = paths
         self.vocab = vocab
@@ -458,14 +468,17 @@ class TransfoXLCorpus(object):
         """
         Instantiate a pre-processed corpus.
         """
-        vocab = TransfoXLTokenizer.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+        vocab = TransfoXLTokenizer.from_pretrained(
+            pretrained_model_name_or_path, *inputs, **kwargs)
         if pretrained_model_name_or_path in PRETRAINED_CORPUS_ARCHIVE_MAP:
             corpus_file = PRETRAINED_CORPUS_ARCHIVE_MAP[pretrained_model_name_or_path]
         else:
-            corpus_file = os.path.join(pretrained_model_name_or_path, CORPUS_NAME)
+            corpus_file = os.path.join(
+                pretrained_model_name_or_path, CORPUS_NAME)
         # redirect to the cache, if necessary
         try:
-            resolved_corpus_file = cached_path(corpus_file, cache_dir=cache_dir)
+            resolved_corpus_file = cached_path(
+                corpus_file, cache_dir=cache_dir)
         except EnvironmentError:
             logger.error(
                 "Corpus '{}' was not found in corpus list ({}). "
@@ -548,7 +561,8 @@ class TransfoXLCorpus(object):
                 data_iter = LMOrderedIterator(self.train, *args, **kwargs)
             elif self.dataset == 'lm1b':
                 kwargs['shuffle'] = True
-                data_iter = LMMultiFileIterator(self.train, self.vocab, *args, **kwargs)
+                data_iter = LMMultiFileIterator(
+                    self.train, self.vocab, *args, **kwargs)
         elif split in ['valid', 'test']:
             data = self.valid if split == 'valid' else self.test
             if self.dataset in ['ptb', 'wt2', 'wt103', 'enwik8', 'text8']:

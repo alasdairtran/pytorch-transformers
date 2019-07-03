@@ -6,13 +6,15 @@ import logging
 import numpy as np
 import torch
 import torch.nn.functional as F
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from tqdm import trange
 
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.INFO)
+from transformers import GPT2LMHeadModel, GPT2Tokenizer
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def top_k_logits(logits, k):
     """
@@ -27,13 +29,16 @@ def top_k_logits(logits, k):
         batch_mins = values[:, -1].view(-1, 1).expand_as(logits)
         return torch.where(logits < batch_mins, torch.ones_like(logits) * -1e10, logits)
 
+
 def sample_sequence(model, length, start_token=None, batch_size=None, context=None, temperature=1, top_k=0, device='cuda', sample=True):
     if start_token is None:
         assert context is not None, 'Specify exactly one of start_token and context!'
-        context = torch.tensor(context, device=device, dtype=torch.long).unsqueeze(0).repeat(batch_size, 1)
+        context = torch.tensor(context, device=device, dtype=torch.long).unsqueeze(
+            0).repeat(batch_size, 1)
     else:
         assert context is None, 'Specify exactly one of start_token and context!'
-        context = torch.full((batch_size, 1), start_token, device=device, dtype=torch.long)
+        context = torch.full((batch_size, 1), start_token,
+                             device=device, dtype=torch.long)
     prev = context
     output = context
     past = None
@@ -50,16 +55,19 @@ def sample_sequence(model, length, start_token=None, batch_size=None, context=No
             output = torch.cat((output, prev), dim=1)
     return output
 
+
 def run_model():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_name_or_path', type=str, default='gpt2', help='pretrained model name or path to local checkpoint')
+    parser.add_argument('--model_name_or_path', type=str, default='gpt2',
+                        help='pretrained model name or path to local checkpoint')
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--nsamples", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=-1)
     parser.add_argument("--length", type=int, default=-1)
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--top_k", type=int, default=0)
-    parser.add_argument('--unconditional', action='store_true', help='If true, unconditional generation.')
+    parser.add_argument('--unconditional', action='store_true',
+                        help='If true, unconditional generation.')
     args = parser.parse_args()
     print(args)
 
@@ -80,7 +88,8 @@ def run_model():
     if args.length == -1:
         args.length = model.config.n_ctx // 2
     elif args.length > model.config.n_ctx:
-        raise ValueError("Can't get samples longer than window size: %s" % model.config.n_ctx)
+        raise ValueError(
+            "Can't get samples longer than window size: %s" % model.config.n_ctx)
 
     while True:
         context_tokens = []
@@ -103,7 +112,8 @@ def run_model():
                 for i in range(args.batch_size):
                     generated += 1
                     text = enc.decode(out[i])
-                    print("=" * 40 + " SAMPLE " + str(generated) + " " + "=" * 40)
+                    print("=" * 40 + " SAMPLE " +
+                          str(generated) + " " + "=" * 40)
                     print(text)
             print("=" * 80)
         else:
@@ -116,13 +126,15 @@ def run_model():
                     batch_size=args.batch_size,
                     temperature=args.temperature, top_k=args.top_k, device=device
                 )
-                out = out[:,1:].tolist()
+                out = out[:, 1:].tolist()
                 for i in range(args.batch_size):
                     generated += 1
                     text = enc.decode(out[i])
-                    print("=" * 40 + " SAMPLE " + str(generated) + " " + "=" * 40)
+                    print("=" * 40 + " SAMPLE " +
+                          str(generated) + " " + "=" * 40)
                     print(text)
             print("=" * 80)
+
 
 if __name__ == '__main__':
     run_model()

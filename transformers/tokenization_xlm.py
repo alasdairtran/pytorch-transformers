@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2018 The Open AI Team Authors and The HuggingFace Inc. team.
+# Copyright 2019 The Open AI Team Authors and The HuggingFace Inc. team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,69 +19,43 @@ from __future__ import (absolute_import, division, print_function,
 import json
 import logging
 import os
+import re
 import sys
 from io import open
 
-import regex as re
+from tqdm import tqdm
 
 from .file_utils import cached_path
-
-try:
-    from functools import lru_cache
-except ImportError:
-    # Just a dummy decorator to get the checks to run on python2
-    # because honestly I don't want to support a byte-level unicode BPE tokenizer on python 2 right now.
-    def lru_cache():
-        return lambda func: func
-
+from .tokenization import BasicTokenizer
 
 logger = logging.getLogger(__name__)
 
 PRETRAINED_VOCAB_ARCHIVE_MAP = {
-    'gpt2': "https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-vocab.json",
-    'gpt2-medium': "https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-medium-vocab.json",
+    'xlm-mlm-en-2048': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-en-2048-vocab.json",
 }
 PRETRAINED_MERGES_ARCHIVE_MAP = {
-    'gpt2': "https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-merges.txt",
-    'gpt2-medium': "https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-medium-merges.txt",
+    'xlm-mlm-en-2048': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-en-2048-merges.txt",
 }
 PRETRAINED_VOCAB_POSITIONAL_EMBEDDINGS_SIZE_MAP = {
-    'gpt2': 1024,
+    'xlm-mlm-en-2048': 512,
 }
 VOCAB_NAME = 'vocab.json'
 MERGES_NAME = 'merges.txt'
 SPECIAL_TOKENS_NAME = 'special_tokens.txt'
 
-
-@lru_cache()
-def bytes_to_unicode():
-    """
-    Returns list of utf-8 byte and a corresponding list of unicode strings.
-    The reversible bpe codes work on unicode strings.
-    This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
-    When you're at something like a 10B token dataset you end up needing around 5K for decent coverage.
-    This is a signficant percentage of your normal, say, 32K bpe vocab.
-    To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
-    And avoids mapping to whitespace/control characters the bpe code barfs on.
-    """
-    _chr = unichr if sys.version_info[0] == 2 else chr
-    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"),
-                                                      ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
-    cs = bs[:]
-    n = 0
-    for b in range(2**8):
-        if b not in bs:
-            bs.append(b)
-            cs.append(2**8+n)
-            n += 1
-    cs = [_chr(n) for n in cs]
-    return dict(zip(bs, cs))
+INDEX = {
+    "bos_index": 0,
+    "eos_index": 1,
+    "pad_index": 2,
+    "unk_index": 3,
+    "mask_index": 5
+}
 
 
 def get_pairs(word):
-    """Return set of symbol pairs in a word.
-
-    Word is represented as tuple of symbols (symbols being variable-length strings).
+    """
+    Return set of symbol pairs in a word.
+    word is represented as tuple of symbols (symbols being variable-length strings)
     """
     pairs = set()
     prev_char = word[0]
@@ -91,15 +65,35 @@ def get_pairs(word):
     return pairs
 
 
-class GPT2Tokenizer(object):
+def text_standardize(text):
     """
-    GPT-2 BPE tokenizer. Peculiarities:
-        - Byte-level BPE
+    fixes some issues the spacy tokenizer had on books corpus
+    also does some whitespace standardization
+    """
+    text = text.replace('—', '-')
+    text = text.replace('–', '-')
+    text = text.replace('―', '-')
+    text = text.replace('…', '...')
+    text = text.replace('´', "'")
+    text = re.sub(
+        r'''(-+|~+|!+|"+|;+|\?+|\++|,+|\)+|\(+|\\+|\/+|\*+|\[+|\]+|}+|{+|\|+|_+)''', r' \1 ', text)
+    text = re.sub(r'\s*\n\s*', ' \n ', text)
+    text = re.sub(r'[^\S\n]+', ' ', text)
+    return text.strip()
+
+
+class XLMTokenizer(object):
+    """
+    BPE tokenizer for XLM, adapted from OpenAI BPE tokenizer. Peculiarities:
+        - lower case all inputs
+        - uses SpaCy tokenizer and ftfy for pre-BPE tokenization if they are installed, fallback to BERT's BasicTokenizer if not.
+        - argument special_tokens and function set_special_tokens:
+            can be used to add additional symbols (ex: "__classify__") to a vocabulary.
     """
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, cache_dir=None, *inputs, **kwargs):
         """
-        Instantiate a GPT2Tokenizer from a pre-trained model file.
+        Instantiate a PreTrainedBertModel from a pre-trained model file.
         Download and cache the pre-trained model file if needed.
         """
         if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
@@ -161,22 +155,27 @@ class GPT2Tokenizer(object):
                         special_tokens=special_tokens, *inputs, **kwargs)
         return tokenizer
 
-    def __init__(self, vocab_file, merges_file, errors='replace', special_tokens=None, max_len=None):
+    def __init__(self, vocab_file, merges_file, special_tokens=None, max_len=None):
+        try:
+            import ftfy
+            import spacy
+            self.nlp = spacy.load(
+                'en', disable=['parser', 'tagger', 'ner', 'textcat'])
+            self.fix_text = ftfy.fix_text
+        except ImportError:
+            logger.warning(
+                "ftfy or spacy is not installed using BERT BasicTokenizer instead of SpaCy & ftfy.")
+            self.nlp = BasicTokenizer(do_lower_case=True,
+                                      never_split=special_tokens if special_tokens is not None else [])
+            self.fix_text = None
+
         self.max_len = max_len if max_len is not None else int(1e12)
-        self.encoder = json.load(open(vocab_file))
+        self.encoder = json.load(open(vocab_file, encoding="utf-8"))
         self.decoder = {v: k for k, v in self.encoder.items()}
-        self.errors = errors  # how to handle errors in decoding
-        self.byte_encoder = bytes_to_unicode()
-        self.byte_decoder = {v: k for k, v in self.byte_encoder.items()}
-        bpe_data = open(merges_file, encoding='utf-8').read().split('\n')[1:-1]
-        bpe_merges = [tuple(merge.split()) for merge in bpe_data]
-        self.bpe_ranks = dict(zip(bpe_merges, range(len(bpe_merges))))
+        merges = open(merges_file, encoding='utf-8').read().split('\n')[:-1]
+        merges = [tuple(merge.split()[:2]) for merge in merges]
+        self.bpe_ranks = dict(zip(merges, range(len(merges))))
         self.cache = {}
-
-        # Should haved added re.IGNORECASE so BPE merges can happen for capitalized versions of contractions
-        self.pat = re.compile(
-            r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
-
         self.special_tokens = {}
         self.special_tokens_decoder = {}
         self.set_special_tokens(special_tokens)
@@ -197,16 +196,19 @@ class GPT2Tokenizer(object):
                                    for i, tok in enumerate(special_tokens))
         self.special_tokens_decoder = {
             v: k for k, v in self.special_tokens.items()}
+        if self.fix_text is None:
+            # Using BERT's BasicTokenizer: we can update the tokenizer
+            self.nlp.never_split = special_tokens
         logger.info("Special tokens {}".format(self.special_tokens))
 
     def bpe(self, token):
+        word = tuple(token[:-1]) + (token[-1] + '</w>',)
         if token in self.cache:
             return self.cache[token]
-        word = tuple(token)
         pairs = get_pairs(word)
 
         if not pairs:
-            return token
+            return token+'</w>'
 
         while True:
             bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(
@@ -238,21 +240,26 @@ class GPT2Tokenizer(object):
             else:
                 pairs = get_pairs(word)
         word = ' '.join(word)
+        if word == '\n  </w>':
+            word = '\n</w>'
         self.cache[token] = word
         return word
 
     def tokenize(self, text):
         """ Tokenize a string. """
-        bpe_tokens = []
-        for token in re.findall(self.pat, text):
-            if sys.version_info[0] == 2:
-                token = ''.join(self.byte_encoder[ord(b)] for b in token)
-            else:
-                token = ''.join(self.byte_encoder[b]
-                                for b in token.encode('utf-8'))
-            bpe_tokens.extend(
-                bpe_token for bpe_token in self.bpe(token).split(' '))
-        return bpe_tokens
+        split_tokens = []
+        if self.fix_text is None:
+            # Using BERT's BasicTokenizer
+            text = self.nlp.tokenize(text)
+            for token in text:
+                split_tokens.extend([t for t in self.bpe(token).split(' ')])
+        else:
+            # Using SpaCy & ftfy (original tokenization process of OpenAI GPT)
+            text = self.nlp(text_standardize(self.fix_text(text)))
+            for token in text:
+                split_tokens.extend(
+                    [t for t in self.bpe(token.text.lower()).split(' ')])
+        return split_tokens
 
     def convert_tokens_to_ids(self, tokens):
         """ Converts a sequence of tokens into ids using the vocab. """
@@ -290,17 +297,17 @@ class GPT2Tokenizer(object):
     def encode(self, text):
         return self.convert_tokens_to_ids(self.tokenize(text))
 
-    def decode(self, tokens, skip_special_tokens=False, clean_up_tokenization_spaces=True):
-        text = ''.join(self.convert_ids_to_tokens(
-            tokens, skip_special_tokens=skip_special_tokens))
-        text = bytearray([self.byte_decoder[c]
-                          for c in text]).decode('utf-8', errors=self.errors)
+    def decode(self, ids, skip_special_tokens=False, clean_up_tokenization_spaces=True):
+        """Converts a sequence of ids in a string."""
+        tokens = self.convert_ids_to_tokens(
+            ids, skip_special_tokens=skip_special_tokens)
+        out_string = ''.join(tokens).replace('</w>', ' ').strip()
         if clean_up_tokenization_spaces:
-            text = text.replace('<unk>', '')
-            text = text.replace(' .', '.').replace(' ?', '?').replace(' !', '!').replace(' ,', ','
-                                                                                         ).replace(" ' ", "'").replace(" n't", "n't").replace(" 'm", "'m").replace(" do not", " don't"
-                                                                                                                                                                   ).replace(" 's", "'s").replace(" 've", "'ve").replace(" 're", "'re")
-        return text
+            out_string = out_string.replace('<unk>', '')
+            out_string = out_string.replace(' .', '.').replace(' ?', '?').replace(' !', '!').replace(' ,', ','
+                                                                                                     ).replace(" ' ", "'").replace(" n't", "n't").replace(" 'm", "'m").replace(" do not", " don't"
+                                                                                                                                                                               ).replace(" 's", "'s").replace(" 've", "'ve").replace(" 're", "'re")
+        return out_string
 
     def save_vocabulary(self, vocab_path):
         """Save the tokenizer vocabulary and merge files to a directory."""

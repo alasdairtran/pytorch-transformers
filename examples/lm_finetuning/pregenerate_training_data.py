@@ -1,14 +1,16 @@
+import collections
+import json
+import shelve
 from argparse import ArgumentParser
 from pathlib import Path
-from tqdm import tqdm, trange
+from random import choice, randint, random, randrange, shuffle
 from tempfile import TemporaryDirectory
-import shelve
 
-from random import random, randrange, randint, shuffle, choice
-from transformers.tokenization import BertTokenizer
 import numpy as np
-import json
-import collections
+from tqdm import tqdm, trange
+
+from transformers.tokenization import BertTokenizer
+
 
 class DocumentDatabase:
     def __init__(self, reduce_memory=False):
@@ -50,12 +52,15 @@ class DocumentDatabase:
             if self.doc_cumsum is None or len(self.doc_cumsum) != len(self.doc_lengths):
                 self._precalculate_doc_weights()
             rand_start = self.doc_cumsum[current_idx]
-            rand_end = rand_start + self.cumsum_max - self.doc_lengths[current_idx]
+            rand_end = rand_start + self.cumsum_max - \
+                self.doc_lengths[current_idx]
             sentence_index = randrange(rand_start, rand_end) % self.cumsum_max
-            sampled_doc_index = np.searchsorted(self.doc_cumsum, sentence_index, side='right')
+            sampled_doc_index = np.searchsorted(
+                self.doc_cumsum, sentence_index, side='right')
         else:
             # If we don't use sentence weighting, then every doc has an equal chance to be chosen
-            sampled_doc_index = (current_idx + randrange(1, len(self.doc_lengths))) % len(self.doc_lengths)
+            sampled_doc_index = (
+                current_idx + randrange(1, len(self.doc_lengths))) % len(self.doc_lengths)
         assert sampled_doc_index != current_idx
         if self.reduce_memory:
             return self.document_shelf[str(sampled_doc_index)]
@@ -98,8 +103,10 @@ def truncate_seq_pair(tokens_a, tokens_b, max_num_tokens):
         else:
             trunc_tokens.pop()
 
+
 MaskedLmInstance = collections.namedtuple("MaskedLmInstance",
                                           ["index", "label"])
+
 
 def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq, whole_word_mask, vocab_list):
     """Creates the predictions for the masked LM objective. This is mostly copied from the Google BERT repo, but
@@ -155,7 +162,8 @@ def create_masked_lm_predictions(tokens, masked_lm_prob, max_predictions_per_seq
                 # 10% of the time, replace with random word
                 else:
                     masked_token = choice(vocab_list)
-            masked_lms.append(MaskedLmInstance(index=index, label=tokens[index]))
+            masked_lms.append(MaskedLmInstance(
+                index=index, label=tokens[index]))
             tokens[index] = masked_token
 
     assert len(masked_lms) <= num_to_mask
@@ -221,7 +229,8 @@ def create_instances_from_document(
                     target_b_length = target_seq_length - len(tokens_a)
 
                     # Sample a random document, with longer docs being sampled more frequently
-                    random_document = doc_database.sample_doc(current_idx=doc_idx, sentence_weighted=True)
+                    random_document = doc_database.sample_doc(
+                        current_idx=doc_idx, sentence_weighted=True)
 
                     random_start = randrange(0, len(random_document))
                     for j in range(random_start, len(random_document)):
@@ -242,10 +251,12 @@ def create_instances_from_document(
                 assert len(tokens_a) >= 1
                 assert len(tokens_b) >= 1
 
-                tokens = ["[CLS]"] + tokens_a + ["[SEP]"] + tokens_b + ["[SEP]"]
+                tokens = ["[CLS]"] + tokens_a + \
+                    ["[SEP]"] + tokens_b + ["[SEP]"]
                 # The segment IDs are 0 for the [CLS] token, the A tokens and the first [SEP]
                 # They are 1 for the B tokens and the final [SEP]
-                segment_ids = [0 for _ in range(len(tokens_a) + 2)] + [1 for _ in range(len(tokens_b) + 1)]
+                segment_ids = [0 for _ in range(
+                    len(tokens_a) + 2)] + [1 for _ in range(len(tokens_b) + 1)]
 
                 tokens, masked_lm_positions, masked_lm_labels = create_masked_lm_predictions(
                     tokens, masked_lm_prob, max_predictions_per_seq, whole_word_mask, vocab_list)
@@ -289,7 +300,8 @@ def main():
 
     args = parser.parse_args()
 
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    tokenizer = BertTokenizer.from_pretrained(
+        args.bert_model, do_lower_case=args.do_lower_case)
     vocab_list = list(tokenizer.vocab.keys())
     with DocumentDatabase(reduce_memory=args.reduce_memory) as docs:
         with args.train_corpus.open() as f:
@@ -303,7 +315,8 @@ def main():
                     tokens = tokenizer.tokenize(line)
                     doc.append(tokens)
             if doc:
-                docs.add_document(doc)  # If the last doc didn't end on a newline, make sure it still gets added
+                # If the last doc didn't end on a newline, make sure it still gets added
+                docs.add_document(doc)
         if len(docs) <= 1:
             exit("ERROR: No document breaks were found in the input file! These are necessary to allow the script to "
                  "ensure that random NextSentences are not sampled from the same document. Please add blank lines to "
@@ -321,7 +334,8 @@ def main():
                         docs, doc_idx, max_seq_length=args.max_seq_len, short_seq_prob=args.short_seq_prob,
                         masked_lm_prob=args.masked_lm_prob, max_predictions_per_seq=args.max_predictions_per_seq,
                         whole_word_mask=args.do_whole_word_mask, vocab_list=vocab_list)
-                    doc_instances = [json.dumps(instance) for instance in doc_instances]
+                    doc_instances = [json.dumps(instance)
+                                     for instance in doc_instances]
                     for instance in doc_instances:
                         epoch_file.write(instance + '\n')
                         num_instances += 1

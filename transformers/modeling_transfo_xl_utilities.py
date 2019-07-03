@@ -27,6 +27,7 @@ import torch.nn.functional as F
 # CUDA_MAJOR = int(torch.version.cuda.split('.')[0])
 # CUDA_MINOR = int(torch.version.cuda.split('.')[1])
 
+
 class ProjectedAdaptiveLogSoftmax(nn.Module):
     def __init__(self, n_token, d_embed, d_proj, cutoffs, div_val=1,
                  keep_order=False):
@@ -45,7 +46,8 @@ class ProjectedAdaptiveLogSoftmax(nn.Module):
         self.head_size = self.shortlist_size + self.n_clusters
 
         if self.n_clusters > 0:
-            self.cluster_weight = nn.Parameter(torch.zeros(self.n_clusters, self.d_embed))
+            self.cluster_weight = nn.Parameter(
+                torch.zeros(self.n_clusters, self.d_embed))
             self.cluster_bias = nn.Parameter(torch.zeros(self.n_clusters))
 
         self.out_layers = nn.ModuleList()
@@ -107,7 +109,7 @@ class ProjectedAdaptiveLogSoftmax(nn.Module):
             labels = labels.view(-1)
             if hidden.size(0) != labels.size(0):
                 raise RuntimeError('Input and labels should have the same size '
-                                'in the batch dimension.')
+                                   'in the batch dimension.')
 
         if self.n_clusters == 0:
             logit = self._compute_logit(hidden, self.out_layers[0].weight,
@@ -140,13 +142,15 @@ class ProjectedAdaptiveLogSoftmax(nn.Module):
 
             head_weight, head_bias, head_proj = weights[0], biases[0], self.out_projs[0]
 
-            head_logit = self._compute_logit(hidden, head_weight, head_bias, head_proj)
+            head_logit = self._compute_logit(
+                hidden, head_weight, head_bias, head_proj)
             head_logprob = F.log_softmax(head_logit, dim=1)
 
             if labels is None:
                 out = hidden.new_empty((head_logit.size(0), self.n_token))
             else:
-                out = torch.zeros_like(labels, dtype=hidden.dtype, device=hidden.device)
+                out = torch.zeros_like(
+                    labels, dtype=hidden.dtype, device=hidden.device)
 
             offset = 0
             cutoff_values = [0] + self.cutoffs
@@ -168,20 +172,25 @@ class ProjectedAdaptiveLogSoftmax(nn.Module):
 
                 if i == 0:
                     if labels is not None:
-                        logprob_i = head_logprob_i.gather(1, target_i[:, None]).squeeze(1)
+                        logprob_i = head_logprob_i.gather(
+                            1, target_i[:, None]).squeeze(1)
                     else:
                         out[:, :self.cutoffs[0]] = head_logprob[:, :self.cutoffs[0]]
                 else:
                     weight_i, bias_i, proj_i = weights[i], biases[i], self.out_projs[i]
 
-                    tail_logit_i = self._compute_logit(hidden_i, weight_i, bias_i, proj_i)
+                    tail_logit_i = self._compute_logit(
+                        hidden_i, weight_i, bias_i, proj_i)
                     tail_logprob_i = F.log_softmax(tail_logit_i, dim=1)
-                    cluster_prob_idx = self.cutoffs[0] + i - 1  # No probability for the head cluster
+                    # No probability for the head cluster
+                    cluster_prob_idx = self.cutoffs[0] + i - 1
                     if labels is not None:
                         logprob_i = head_logprob_i[:, cluster_prob_idx] \
-                                + tail_logprob_i.gather(1, target_i[:, None]).squeeze(1)
+                            + tail_logprob_i.gather(1,
+                                                    target_i[:, None]).squeeze(1)
                     else:
-                        logprob_i = head_logprob[:, cluster_prob_idx, None] + tail_logprob_i
+                        logprob_i = head_logprob[:,
+                                                 cluster_prob_idx, None] + tail_logprob_i
                         out[:, l_idx:r_idx] = logprob_i
 
                 if labels is not None:
@@ -192,7 +201,6 @@ class ProjectedAdaptiveLogSoftmax(nn.Module):
                     offset += logprob_i.size(0)
 
         return out
-
 
     def log_prob(self, hidden):
         r""" Computes log probabilities for all :math:`n\_classes`
@@ -233,7 +241,8 @@ class ProjectedAdaptiveLogSoftmax(nn.Module):
                 biases.append(bias_i)
 
             head_weight, head_bias, head_proj = weights[0], biases[0], self.out_projs[0]
-            head_logit = self._compute_logit(hidden, head_weight, head_bias, head_proj)
+            head_logit = self._compute_logit(
+                hidden, head_weight, head_bias, head_proj)
 
             out = hidden.new_empty((head_logit.size(0), self.n_token))
             head_logprob = F.log_softmax(head_logit, dim=1)
@@ -247,7 +256,8 @@ class ProjectedAdaptiveLogSoftmax(nn.Module):
                 else:
                     weight_i, bias_i, proj_i = weights[i], biases[i], self.out_projs[i]
 
-                    tail_logit_i = self._compute_logit(hidden, weight_i, bias_i, proj_i)
+                    tail_logit_i = self._compute_logit(
+                        hidden, weight_i, bias_i, proj_i)
                     tail_logprob_i = F.log_softmax(tail_logit_i, dim=1)
 
                     logprob_i = head_logprob[:, -i] + tail_logprob_i
@@ -273,7 +283,8 @@ class LogUniformSampler(object):
             self.dist = (log_indices[1:] - log_indices[:-1]) / log_indices[-1]
             # print('P', self.dist.numpy().tolist()[-30:])
 
-            self.log_q = (- (-self.dist.double().log1p_() * 2 * n_sample).expm1_()).log_().float()
+            self.log_q = (- (-self.dist.double().log1p_() *
+                             2 * n_sample).expm1_()).log_().float()
 
         self.n_sample = n_sample
 
@@ -291,12 +302,14 @@ class LogUniformSampler(object):
         n_tries = 2 * n_sample
 
         with torch.no_grad():
-            neg_samples = torch.multinomial(self.dist, n_tries, replacement=True).unique()
+            neg_samples = torch.multinomial(
+                self.dist, n_tries, replacement=True).unique()
             device = labels.device
             neg_samples = neg_samples.to(device)
             true_log_probs = self.log_q[labels].to(device)
             samp_log_probs = self.log_q[neg_samples].to(device)
             return true_log_probs, samp_log_probs, neg_samples
+
 
 def sample_logits(embedding, bias, labels, inputs, sampler):
     """
@@ -323,9 +336,9 @@ def sample_logits(embedding, bias, labels, inputs, sampler):
     hit = (labels[:, :, None] == neg_samples).detach()
 
     true_logits = torch.einsum('ijk,ijk->ij',
-        [true_w, inputs]) + true_b - true_log_probs
+                               [true_w, inputs]) + true_b - true_log_probs
     sample_logits = torch.einsum('lk,ijk->ijl',
-        [sample_w, inputs]) + sample_b - samp_log_probs
+                                 [sample_w, inputs]) + sample_b - samp_log_probs
     sample_logits.masked_fill_(hit, -1e30)
     logits = torch.cat([true_logits[:, :, None], sample_logits], -1)
 
@@ -378,7 +391,7 @@ if __name__ == '__main__':
     # sampler = LogUniformSampler(n_vocab, unique=False)
     # new_labels, sample, sample_prob = sampler.sample(n_sample, labels)
 
-    sampler = LogUniformSampler(n_vocab, n_sample)#, unique=True)
+    sampler = LogUniformSampler(n_vocab, n_sample)  # , unique=True)
     # true_probs, samp_probs, neg_samples = sampler.sample(n_sample, labels)
 
     # print('true_probs', true_probs.numpy().tolist())
@@ -393,7 +406,8 @@ if __name__ == '__main__':
     bias = torch.zeros(n_vocab)
     inputs = torch.Tensor(S, B, H).normal_()
 
-    logits, out_labels = sample_logits(embedding, bias, labels, inputs, sampler, n_sample)
+    logits, out_labels = sample_logits(
+        embedding, bias, labels, inputs, sampler, n_sample)
     print('logits', logits.detach().numpy().tolist())
     print('logits shape', logits.size())
     print('out_labels', out_labels.detach().numpy().tolist())

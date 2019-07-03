@@ -43,6 +43,7 @@ VOCAB_NAME = 'vocab.json'
 MERGES_NAME = 'merges.txt'
 SPECIAL_TOKENS_NAME = 'special_tokens.txt'
 
+
 def get_pairs(word):
     """
     Return set of symbol pairs in a word.
@@ -55,6 +56,7 @@ def get_pairs(word):
         prev_char = char
     return pairs
 
+
 def text_standardize(text):
     """
     fixes some issues the spacy tokenizer had on books corpus
@@ -65,10 +67,12 @@ def text_standardize(text):
     text = text.replace('―', '-')
     text = text.replace('…', '...')
     text = text.replace('´', "'")
-    text = re.sub(r'''(-+|~+|!+|"+|;+|\?+|\++|,+|\)+|\(+|\\+|\/+|\*+|\[+|\]+|}+|{+|\|+|_+)''', r' \1 ', text)
+    text = re.sub(
+        r'''(-+|~+|!+|"+|;+|\?+|\++|,+|\)+|\(+|\\+|\/+|\*+|\[+|\]+|}+|{+|\|+|_+)''', r' \1 ', text)
     text = re.sub(r'\s*\n\s*', ' \n ', text)
     text = re.sub(r'[^\S\n]+', ' ', text)
     return text.strip()
+
 
 class OpenAIGPTTokenizer(object):
     """
@@ -89,17 +93,22 @@ class OpenAIGPTTokenizer(object):
             merges_file = PRETRAINED_MERGES_ARCHIVE_MAP[pretrained_model_name_or_path]
             special_tokens_file = None
         else:
-            vocab_file = os.path.join(pretrained_model_name_or_path, VOCAB_NAME)
-            merges_file = os.path.join(pretrained_model_name_or_path, MERGES_NAME)
-            special_tokens_file = os.path.join(pretrained_model_name_or_path, SPECIAL_TOKENS_NAME)
+            vocab_file = os.path.join(
+                pretrained_model_name_or_path, VOCAB_NAME)
+            merges_file = os.path.join(
+                pretrained_model_name_or_path, MERGES_NAME)
+            special_tokens_file = os.path.join(
+                pretrained_model_name_or_path, SPECIAL_TOKENS_NAME)
             if not os.path.exists(special_tokens_file):
                 special_tokens_file = None
             else:
-                logger.info("loading special tokens file {}".format(special_tokens_file))
+                logger.info("loading special tokens file {}".format(
+                    special_tokens_file))
         # redirect to the cache, if necessary
         try:
             resolved_vocab_file = cached_path(vocab_file, cache_dir=cache_dir)
-            resolved_merges_file = cached_path(merges_file, cache_dir=cache_dir)
+            resolved_merges_file = cached_path(
+                merges_file, cache_dir=cache_dir)
         except EnvironmentError:
             if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
                 logger.error(
@@ -130,27 +139,31 @@ class OpenAIGPTTokenizer(object):
             kwargs['max_len'] = min(kwargs.get('max_len', int(1e12)), max_len)
         # Instantiate tokenizer.
         if special_tokens_file and 'special_tokens' not in kwargs:
-            special_tokens = open(special_tokens_file, encoding='utf-8').read().split('\n')[:-1]
+            special_tokens = open(special_tokens_file,
+                                  encoding='utf-8').read().split('\n')[:-1]
         else:
             special_tokens = kwargs.pop('special_tokens', [])
-        tokenizer = cls(resolved_vocab_file, resolved_merges_file, special_tokens=special_tokens, *inputs, **kwargs)
+        tokenizer = cls(resolved_vocab_file, resolved_merges_file,
+                        special_tokens=special_tokens, *inputs, **kwargs)
         return tokenizer
 
     def __init__(self, vocab_file, merges_file, special_tokens=None, max_len=None):
         try:
             import ftfy
             import spacy
-            self.nlp = spacy.load('en', disable=['parser', 'tagger', 'ner', 'textcat'])
+            self.nlp = spacy.load(
+                'en', disable=['parser', 'tagger', 'ner', 'textcat'])
             self.fix_text = ftfy.fix_text
         except ImportError:
-            logger.warning("ftfy or spacy is not installed using BERT BasicTokenizer instead of SpaCy & ftfy.")
+            logger.warning(
+                "ftfy or spacy is not installed using BERT BasicTokenizer instead of SpaCy & ftfy.")
             self.nlp = BasicTokenizer(do_lower_case=True,
                                       never_split=special_tokens if special_tokens is not None else [])
             self.fix_text = None
 
         self.max_len = max_len if max_len is not None else int(1e12)
         self.encoder = json.load(open(vocab_file, encoding="utf-8"))
-        self.decoder = {v:k for k,v in self.encoder.items()}
+        self.decoder = {v: k for k, v in self.encoder.items()}
         merges = open(merges_file, encoding='utf-8').read().split('\n')[1:-1]
         merges = [tuple(merge.split()) for merge in merges]
         self.bpe_ranks = dict(zip(merges, range(len(merges))))
@@ -171,8 +184,10 @@ class OpenAIGPTTokenizer(object):
             self.special_tokens = {}
             self.special_tokens_decoder = {}
             return
-        self.special_tokens = dict((tok, len(self.encoder) + i) for i, tok in enumerate(special_tokens))
-        self.special_tokens_decoder = {v:k for k, v in self.special_tokens.items()}
+        self.special_tokens = dict((tok, len(self.encoder) + i)
+                                   for i, tok in enumerate(special_tokens))
+        self.special_tokens_decoder = {
+            v: k for k, v in self.special_tokens.items()}
         if self.fix_text is None:
             # Using BERT's BasicTokenizer: we can update the tokenizer
             self.nlp.never_split = special_tokens
@@ -188,7 +203,8 @@ class OpenAIGPTTokenizer(object):
             return token+'</w>'
 
         while True:
-            bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(pair, float('inf')))
+            bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(
+                pair, float('inf')))
             if bigram not in self.bpe_ranks:
                 break
             first, second = bigram
@@ -233,7 +249,8 @@ class OpenAIGPTTokenizer(object):
             # Using SpaCy & ftfy (original tokenization process of OpenAI GPT)
             text = self.nlp(text_standardize(self.fix_text(text)))
             for token in text:
-                split_tokens.extend([t for t in self.bpe(token.text.lower()).split(' ')])
+                split_tokens.extend(
+                    [t for t in self.bpe(token.text.lower()).split(' ')])
         return split_tokens
 
     def convert_tokens_to_ids(self, tokens):
@@ -253,7 +270,8 @@ class OpenAIGPTTokenizer(object):
             logger.warning(
                 "Token indices sequence length is longer than the specified maximum "
                 " sequence length for this OpenAI GPT model ({} > {}). Running this"
-                " sequence through the model will result in indexing errors".format(len(ids), self.max_len)
+                " sequence through the model will result in indexing errors".format(
+                    len(ids), self.max_len)
             )
         return ids
 
@@ -273,19 +291,21 @@ class OpenAIGPTTokenizer(object):
 
     def decode(self, ids, skip_special_tokens=False, clean_up_tokenization_spaces=True):
         """Converts a sequence of ids in a string."""
-        tokens = self.convert_ids_to_tokens(ids, skip_special_tokens=skip_special_tokens)
+        tokens = self.convert_ids_to_tokens(
+            ids, skip_special_tokens=skip_special_tokens)
         out_string = ''.join(tokens).replace('</w>', ' ').strip()
         if clean_up_tokenization_spaces:
             out_string = out_string.replace('<unk>', '')
             out_string = out_string.replace(' .', '.').replace(' ?', '?').replace(' !', '!').replace(' ,', ','
-                    ).replace(" ' ", "'").replace(" n't", "n't").replace(" 'm", "'m").replace(" do not", " don't"
-                    ).replace(" 's", "'s").replace(" 've", "'ve").replace(" 're", "'re")
+                                                                                                     ).replace(" ' ", "'").replace(" n't", "n't").replace(" 'm", "'m").replace(" do not", " don't"
+                                                                                                                                                                               ).replace(" 's", "'s").replace(" 've", "'ve").replace(" 're", "'re")
         return out_string
 
     def save_vocabulary(self, vocab_path):
         """Save the tokenizer vocabulary and merge files to a directory."""
         if not os.path.isdir(vocab_path):
-            logger.error("Vocabulary path ({}) should be a directory".format(vocab_path))
+            logger.error(
+                "Vocabulary path ({}) should be a directory".format(vocab_path))
             return
         vocab_file = os.path.join(vocab_path, VOCAB_NAME)
         merge_file = os.path.join(vocab_path, MERGES_NAME)

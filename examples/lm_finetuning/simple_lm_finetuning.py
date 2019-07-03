@@ -15,7 +15,8 @@
 # limitations under the License.
 """BERT finetuning runner."""
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import argparse
 import logging
@@ -29,10 +30,10 @@ from torch.utils.data import DataLoader, Dataset, RandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
-from transformers import WEIGHTS_NAME, CONFIG_NAME
+from transformers import CONFIG_NAME, WEIGHTS_NAME
 from transformers.modeling import BertForPreTraining
-from transformers.tokenization import BertTokenizer
 from transformers.optimization import BertAdam, WarmupLinearSchedule
+from transformers.tokenization import BertTokenizer
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -53,12 +54,13 @@ class BERTDataset(Dataset):
 
         # for loading samples directly from file
         self.sample_counter = 0  # used to keep track of full epochs on file
-        self.line_buffer = None  # keep second sentence of a pair in memory and use as first sentence in next pair
+        # keep second sentence of a pair in memory and use as first sentence in next pair
+        self.line_buffer = None
 
         # for loading samples in memory
         self.current_random_doc = 0
         self.num_docs = 0
-        self.sample_to_doc = [] # map sample index to doc and line
+        self.sample_to_doc = []  # map sample index to doc and line
 
         # load samples into memory
         if on_memory:
@@ -71,10 +73,10 @@ class BERTDataset(Dataset):
                     if line == "":
                         self.all_docs.append(doc)
                         doc = []
-                        #remove last added sample because there won't be a subsequent line anymore in the doc
+                        # remove last added sample because there won't be a subsequent line anymore in the doc
                         self.sample_to_doc.pop()
                     else:
-                        #store as one sample
+                        # store as one sample
                         sample = {"doc_id": len(self.all_docs),
                                   "line": len(doc)}
                         self.sample_to_doc.append(sample)
@@ -126,10 +128,12 @@ class BERTDataset(Dataset):
         tokens_b = self.tokenizer.tokenize(t2)
 
         # combine to one sample
-        cur_example = InputExample(guid=cur_id, tokens_a=tokens_a, tokens_b=tokens_b, is_next=is_next_label)
+        cur_example = InputExample(
+            guid=cur_id, tokens_a=tokens_a, tokens_b=tokens_b, is_next=is_next_label)
 
         # transform sample to features
-        cur_features = convert_example_to_features(cur_example, self.seq_len, self.tokenizer)
+        cur_features = convert_example_to_features(
+            cur_example, self.seq_len, self.tokenizer)
 
         cur_tensors = (torch.tensor(cur_features.input_ids),
                        torch.tensor(cur_features.input_mask),
@@ -176,7 +180,7 @@ class BERTDataset(Dataset):
         else:
             if self.line_buffer is None:
                 # read first non-empty line of file
-                while t1 == "" :
+                while t1 == "":
                     t1 = next(self.file).strip()
                     t2 = next(self.file).strip()
             else:
@@ -208,11 +212,12 @@ class BERTDataset(Dataset):
                 rand_doc = self.all_docs[rand_doc_idx]
                 line = rand_doc[random.randrange(len(rand_doc))]
             else:
-                rand_index = random.randint(1, self.corpus_lines if self.corpus_lines < 1000 else 1000)
-                #pick random line
+                rand_index = random.randint(
+                    1, self.corpus_lines if self.corpus_lines < 1000 else 1000)
+                # pick random line
                 for _ in range(rand_index):
                     line = self.get_next_line()
-            #check if our picked random line is really from another doc like we want it to be
+            # check if our picked random line is really from another doc like we want it to be
             if self.current_random_doc != self.current_doc:
                 break
         return line
@@ -221,13 +226,14 @@ class BERTDataset(Dataset):
         """ Gets next line of random_file and starts over when reaching end of file"""
         try:
             line = next(self.random_file).strip()
-            #keep track of which document we are currently looking at to later avoid having the same doc as t1
+            # keep track of which document we are currently looking at to later avoid having the same doc as t1
             if line == "":
                 self.current_random_doc = self.current_random_doc + 1
                 line = next(self.random_file).strip()
         except StopIteration:
             self.random_file.close()
-            self.random_file = open(self.corpus_path, "r", encoding=self.encoding)
+            self.random_file = open(
+                self.corpus_path, "r", encoding=self.encoding)
             line = next(self.random_file).strip()
         return line
 
@@ -296,7 +302,8 @@ def random_word(tokens, tokenizer):
             except KeyError:
                 # For unknown words (should not occur with BPE vocab)
                 output_label.append(tokenizer.vocab["[UNK]"])
-                logger.warning("Cannot find token '{}' in vocab. Using [UNK] insetad".format(token))
+                logger.warning(
+                    "Cannot find token '{}' in vocab. Using [UNK] insetad".format(token))
         else:
             # no masking token (will be ignored by loss function later)
             output_label.append(-1)
@@ -382,11 +389,11 @@ def convert_example_to_features(example, max_seq_length, tokenizer):
         logger.info("*** Example ***")
         logger.info("guid: %s" % (example.guid))
         logger.info("tokens: %s" % " ".join(
-                [str(x) for x in tokens]))
+            [str(x) for x in tokens]))
         logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
         logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
         logger.info(
-                "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+            "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
         logger.info("LM label: %s " % (lm_label_ids))
         logger.info("Is next sentence label: %s " % (example.is_next))
 
@@ -401,7 +408,7 @@ def convert_example_to_features(example, max_seq_length, tokenizer):
 def main():
     parser = argparse.ArgumentParser()
 
-    ## Required parameters
+    # Required parameters
     parser.add_argument("--train_corpus",
                         default=None,
                         type=str,
@@ -416,7 +423,7 @@ def main():
                         required=True,
                         help="The output directory where the model checkpoints will be written.")
 
-    ## Other parameters
+    # Other parameters
     parser.add_argument("--max_seq_length",
                         default=128,
                         type=int,
@@ -468,15 +475,16 @@ def main():
                         action='store_true',
                         help="Whether to use 16-bit float precision instead of 32-bit")
     parser.add_argument('--loss_scale',
-                        type = float, default = 0,
-                        help = "Loss scaling to improve fp16 numeric stability. Only used when fp16 set to True.\n"
+                        type=float, default=0,
+                        help="Loss scaling to improve fp16 numeric stability. Only used when fp16 set to True.\n"
                         "0 (default value): dynamic loss scaling.\n"
                         "Positive power of 2: static loss scaling value.\n")
 
     args = parser.parse_args()
 
     if args.local_rank == -1 or args.no_cuda:
-        device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
+        device = torch.device(
+            "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
         n_gpu = torch.cuda.device_count()
     else:
         torch.cuda.set_device(args.local_rank)
@@ -489,7 +497,7 @@ def main():
 
     if args.gradient_accumulation_steps < 1:
         raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
-                            args.gradient_accumulation_steps))
+            args.gradient_accumulation_steps))
 
     args.train_batch_size = args.train_batch_size // args.gradient_accumulation_steps
 
@@ -500,14 +508,17 @@ def main():
         torch.cuda.manual_seed_all(args.seed)
 
     if not args.do_train:
-        raise ValueError("Training is currently the only implemented execution option. Please set `do_train`.")
+        raise ValueError(
+            "Training is currently the only implemented execution option. Please set `do_train`.")
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir):
-        raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))
+        raise ValueError(
+            "Output directory ({}) already exists and is not empty.".format(args.output_dir))
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    tokenizer = BertTokenizer.from_pretrained(
+        args.bert_model, do_lower_case=args.do_lower_case)
 
     #train_examples = None
     num_train_optimization_steps = None
@@ -529,7 +540,8 @@ def main():
         try:
             from apex.parallel import DistributedDataParallel as DDP
         except ImportError:
-            raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
+            raise ImportError(
+                "Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
         model = DDP(model)
     elif n_gpu > 1:
         model = torch.nn.DataParallel(model)
@@ -539,16 +551,19 @@ def main():
         param_optimizer = list(model.named_parameters())
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
         optimizer_grouped_parameters = [
-            {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
-            {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
-            ]
+            {'params': [p for n, p in param_optimizer if not any(
+                nd in n for nd in no_decay)], 'weight_decay': 0.01},
+            {'params': [p for n, p in param_optimizer if any(
+                nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        ]
 
         if args.fp16:
             try:
                 from apex.optimizers import FP16_Optimizer
                 from apex.optimizers import FusedAdam
             except ImportError:
-                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
+                raise ImportError(
+                    "Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
 
             optimizer = FusedAdam(optimizer_grouped_parameters,
                                   lr=args.learning_rate,
@@ -557,7 +572,8 @@ def main():
             if args.loss_scale == 0:
                 optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True)
             else:
-                optimizer = FP16_Optimizer(optimizer, static_loss_scale=args.loss_scale)
+                optimizer = FP16_Optimizer(
+                    optimizer, static_loss_scale=args.loss_scale)
             warmup_linear = WarmupLinearSchedule(warmup=args.warmup_proportion,
                                                  t_total=num_train_optimization_steps)
 
@@ -577,10 +593,11 @@ def main():
         if args.local_rank == -1:
             train_sampler = RandomSampler(train_dataset)
         else:
-            #TODO: check if this works with current data generator from disk that relies on next(file)
+            # TODO: check if this works with current data generator from disk that relies on next(file)
             # (it doesn't return item back by index)
             train_sampler = DistributedSampler(train_dataset)
-        train_dataloader = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
+        train_dataloader = DataLoader(
+            train_dataset, sampler=train_sampler, batch_size=args.train_batch_size)
 
         model.train()
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
@@ -589,9 +606,10 @@ def main():
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, lm_label_ids, is_next = batch
-                loss = model(input_ids, segment_ids, input_mask, lm_label_ids, is_next)
+                loss = model(input_ids, segment_ids,
+                             input_mask, lm_label_ids, is_next)
                 if n_gpu > 1:
-                    loss = loss.mean() # mean() to average on multi-gpu.
+                    loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
                 if args.fp16:
@@ -605,7 +623,9 @@ def main():
                     if args.fp16:
                         # modify learning rate with special warm up BERT uses
                         # if args.fp16 is False, BertAdam is used that handles this automatically
-                        lr_this_step = args.learning_rate * warmup_linear.get_lr(global_step, args.warmup_proportion)
+                        lr_this_step = args.learning_rate * \
+                            warmup_linear.get_lr(
+                                global_step, args.warmup_proportion)
                         for param_group in optimizer.param_groups:
                             param_group['lr'] = lr_this_step
                     optimizer.step()
@@ -614,7 +634,8 @@ def main():
 
         # Save a trained model
         logger.info("** ** * Saving fine - tuned model ** ** * ")
-        model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+        model_to_save = model.module if hasattr(
+            model, 'module') else model  # Only save the model it-self
         output_model_file = os.path.join(args.output_dir, WEIGHTS_NAME)
         output_config_file = os.path.join(args.output_dir, CONFIG_NAME)
         if args.do_train:

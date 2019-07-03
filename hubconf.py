@@ -1,30 +1,17 @@
-dependencies = ['torch', 'tqdm', 'boto3', 'requests', 'regex']
+from hubconfs.bert_hubconf import (bertForMaskedLM, bertForMultipleChoice,
+                                   bertForNextSentencePrediction,
+                                   bertForPreTraining,
+                                   bertForQuestionAnswering,
+                                   bertForSequenceClassification,
+                                   bertForTokenClassification, bertModel,
+                                   bertTokenizer)
+from hubconfs.gpt2_hubconf import (gpt2DoubleHeadsModel, gpt2LMHeadModel,
+                                   gpt2Model, gpt2Tokenizer)
+from hubconfs.gpt_hubconf import (openAIGPTDoubleHeadsModel,
+                                  openAIGPTLMHeadModel, openAIGPTModel,
+                                  openAIGPTTokenizer)
+from hubconfs.transformer_xl_hubconf import (transformerXLLMHeadModel,
+                                             transformerXLModel,
+                                             transformerXLTokenizer)
 
-from hubconfs.bert_hubconf import (
-    bertTokenizer,
-    bertModel,
-    bertForNextSentencePrediction,
-    bertForPreTraining,
-    bertForMaskedLM,
-    bertForSequenceClassification,
-    bertForMultipleChoice,
-    bertForQuestionAnswering,
-    bertForTokenClassification
-)
-from hubconfs.gpt_hubconf import (
-    openAIGPTTokenizer,
-    openAIGPTModel,
-    openAIGPTLMHeadModel,
-    openAIGPTDoubleHeadsModel
-)
-from hubconfs.gpt2_hubconf import (
-    gpt2Tokenizer,
-    gpt2Model,
-    gpt2LMHeadModel,
-    gpt2DoubleHeadsModel
-)
-from hubconfs.transformer_xl_hubconf import (
-    transformerXLTokenizer,
-    transformerXLModel,
-    transformerXLLMHeadModel
-)
+dependencies = ['torch', 'tqdm', 'boto3', 'requests', 'regex']

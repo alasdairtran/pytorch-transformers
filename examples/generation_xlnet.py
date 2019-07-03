@@ -1,9 +1,9 @@
 import logging
 
 import torch
-from transformers import (XLNetLMHeadModel, XLNetModel,
-                                     XLNetTokenizer)
 from torch.nn import functional as F
+
+from transformers import XLNetLMHeadModel, XLNetModel, XLNetTokenizer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,7 +14,7 @@ tokens = tokenizer.encode('I am very happy')
 for i in range(len(tokens), 20):
     mask = torch.tensor([[[0.0] * i + [1.0]]])
     logits, _ = model(torch.tensor([tokens + [0]]),
-                    #   perm_mask=mask.expand(-1, i+1, -1),
+                      #   perm_mask=mask.expand(-1, i+1, -1),
                       target_mapping=mask,
                       inp_q=mask.squeeze(1))
     output = torch.multinomial(F.softmax(logits[0, 0, :]), 1)

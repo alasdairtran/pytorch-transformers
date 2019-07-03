@@ -23,9 +23,9 @@ from io import open
 import pytest
 
 from transformers.tokenization import (PRETRAINED_VOCAB_ARCHIVE_MAP,
-                                               BasicTokenizer, BertTokenizer,
-                                               WordpieceTokenizer, _is_control,
-                                               _is_punctuation, _is_whitespace)
+                                       BasicTokenizer, BertTokenizer,
+                                       WordpieceTokenizer, _is_control,
+                                       _is_punctuation, _is_whitespace)
 
 
 class TokenizationTest(unittest.TestCase):
@@ -44,7 +44,8 @@ class TokenizationTest(unittest.TestCase):
         os.remove(vocab_file)
 
         tokens = tokenizer.tokenize(u"UNwant\u00E9d,running")
-        self.assertListEqual(tokens, ["un", "##want", "##ed", ",", "runn", "##ing"])
+        self.assertListEqual(
+            tokens, ["un", "##want", "##ed", ",", "runn", "##ing"])
 
         self.assertListEqual(
             tokenizer.convert_tokens_to_ids(tokens), [7, 4, 5, 10, 8, 9])
@@ -54,7 +55,8 @@ class TokenizationTest(unittest.TestCase):
         os.remove(vocab_file)
 
         tokens = tokenizer.tokenize(u"UNwant\u00E9d,running")
-        self.assertListEqual(tokens, ["un", "##want", "##ed", ",", "runn", "##ing"])
+        self.assertListEqual(
+            tokens, ["un", "##want", "##ed", ",", "runn", "##ing"])
 
         self.assertListEqual(
             tokenizer.convert_tokens_to_ids(tokens), [7, 4, 5, 10, 8, 9])
@@ -63,7 +65,8 @@ class TokenizationTest(unittest.TestCase):
     def test_tokenizer_from_pretrained(self):
         cache_dir = "/tmp/pytorch_pretrained_bert_test/"
         for model_name in list(PRETRAINED_VOCAB_ARCHIVE_MAP.keys())[:1]:
-            tokenizer = BertTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+            tokenizer = BertTokenizer.from_pretrained(
+                model_name, cache_dir=cache_dir)
             shutil.rmtree(cache_dir)
             self.assertIsNotNone(tokenizer)
 

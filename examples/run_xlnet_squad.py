@@ -26,16 +26,16 @@ from io import open
 
 import numpy as np
 import torch
-from transformers import CONFIG_NAME, WEIGHTS_NAME
-from transformers.modeling_xlnet import BertForQuestionAnswering
-from transformers.optimization import BertAdam, WarmupLinearSchedule
-from transformers.tokenization_xlnet import XLNetTokenizer
 from tensorboardX import SummaryWriter
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
+from transformers import CONFIG_NAME, WEIGHTS_NAME
+from transformers.modeling_xlnet import BertForQuestionAnswering
+from transformers.optimization import BertAdam, WarmupLinearSchedule
+from transformers.tokenization_xlnet import XLNetTokenizer
 from utils_squad import (RawResult, convert_examples_to_features,
                          read_squad_examples, write_predictions)
 
@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser()
 
-    ## Required parameters
+    # Required parameters
     parser.add_argument("--bert_model", default=None, type=str, required=True,
                         help="Bert pre-trained model selected in the list: bert-base-uncased, "
                         "bert-large-uncased, bert-base-cased, bert-large-cased, bert-base-multilingual-uncased, "
@@ -58,8 +58,9 @@ def main():
     parser.add_argument("--output_dir", default=None, type=str, required=True,
                         help="The output directory where the model checkpoints and predictions will be written.")
 
-    ## Other parameters
-    parser.add_argument("--train_file", default=None, type=str, help="SQuAD json for training. E.g., train-v1.1.json")
+    # Other parameters
+    parser.add_argument("--train_file", default=None, type=str,
+                        help="SQuAD json for training. E.g., train-v1.1.json")
     parser.add_argument("--predict_file", default=None, type=str,
                         help="SQuAD json for predictions. E.g., dev-v1.1.json or test-v1.1.json")
     parser.add_argument("--max_seq_length", default=384, type=int,
@@ -70,11 +71,16 @@ def main():
     parser.add_argument("--max_query_length", default=64, type=int,
                         help="The maximum number of tokens for the question. Questions longer than this will "
                              "be truncated to this length.")
-    parser.add_argument("--do_train", action='store_true', help="Whether to run training.")
-    parser.add_argument("--do_predict", action='store_true', help="Whether to run eval on the dev set.")
-    parser.add_argument("--train_batch_size", default=32, type=int, help="Total batch size for training.")
-    parser.add_argument("--predict_batch_size", default=8, type=int, help="Total batch size for predictions.")
-    parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
+    parser.add_argument("--do_train", action='store_true',
+                        help="Whether to run training.")
+    parser.add_argument("--do_predict", action='store_true',
+                        help="Whether to run eval on the dev set.")
+    parser.add_argument("--train_batch_size", default=32,
+                        type=int, help="Total batch size for training.")
+    parser.add_argument("--predict_batch_size", default=8,
+                        type=int, help="Total batch size for predictions.")
+    parser.add_argument("--learning_rate", default=5e-5,
+                        type=float, help="The initial learning rate for Adam.")
     parser.add_argument("--num_train_epochs", default=3.0, type=float,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--warmup_proportion", default=0.1, type=float,
@@ -124,8 +130,10 @@ def main():
     parser.add_argument('--null_score_diff_threshold',
                         type=float, default=0.0,
                         help="If null_score - best_non_null is greater than the threshold predict null.")
-    parser.add_argument('--server_ip', type=str, default='', help="Can be used for distant debugging.")
-    parser.add_argument('--server_port', type=str, default='', help="Can be used for distant debugging.")
+    parser.add_argument('--server_ip', type=str, default='',
+                        help="Can be used for distant debugging.")
+    parser.add_argument('--server_port', type=str, default='',
+                        help="Can be used for distant debugging.")
     args = parser.parse_args()
     print(args)
 
@@ -133,11 +141,13 @@ def main():
         # Distant debugging - see https://code.visualstudio.com/docs/python/debugging#_attach-to-a-local-script
         import ptvsd
         print("Waiting for debugger attach")
-        ptvsd.enable_attach(address=(args.server_ip, args.server_port), redirect_output=True)
+        ptvsd.enable_attach(
+            address=(args.server_ip, args.server_port), redirect_output=True)
         ptvsd.wait_for_attach()
 
     if args.local_rank == -1 or args.no_cuda:
-        device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
+        device = torch.device(
+            "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
         n_gpu = torch.cuda.device_count()
     else:
         torch.cuda.set_device(args.local_rank)
@@ -146,16 +156,16 @@ def main():
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
         torch.distributed.init_process_group(backend='nccl')
 
-    logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                        datefmt = '%m/%d/%Y %H:%M:%S',
-                        level = logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
+    logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                        datefmt='%m/%d/%Y %H:%M:%S',
+                        level=logging.INFO if args.local_rank in [-1, 0] else logging.WARN)
 
     logger.info("device: {} n_gpu: {}, distributed training: {}, 16-bits training: {}".format(
         device, n_gpu, bool(args.local_rank != -1), args.fp16))
 
     if args.gradient_accumulation_steps < 1:
         raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
-                            args.gradient_accumulation_steps))
+            args.gradient_accumulation_steps))
 
     args.train_batch_size = args.train_batch_size // args.gradient_accumulation_steps
 
@@ -166,7 +176,8 @@ def main():
         torch.cuda.manual_seed_all(args.seed)
 
     if not args.do_train and not args.do_predict:
-        raise ValueError("At least one of `do_train` or `do_predict` must be True.")
+        raise ValueError(
+            "At least one of `do_train` or `do_predict` must be True.")
 
     if args.do_train:
         if not args.train_file:
@@ -178,13 +189,16 @@ def main():
                 "If `do_predict` is True, then `predict_file` must be specified.")
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train and not args.overwrite_output_dir:
-        raise ValueError("Output directory {} already exists and is not empty. Use --overwrite_output_dir to overcome.".format(args.output_dir))
+        raise ValueError(
+            "Output directory {} already exists and is not empty. Use --overwrite_output_dir to overcome.".format(args.output_dir))
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
     if args.local_rank not in [-1, 0]:
-        torch.distributed.barrier()  # Make sure only the first process in distributed training will download model & vocab
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+        # Make sure only the first process in distributed training will download model & vocab
+        torch.distributed.barrier()
+    tokenizer = BertTokenizer.from_pretrained(
+        args.bert_model, do_lower_case=args.do_lower_case)
     model = BertForQuestionAnswering.from_pretrained(args.bert_model)
     if args.local_rank == 0:
         torch.distributed.barrier()
@@ -194,7 +208,8 @@ def main():
     model.to(device)
     if args.local_rank != -1:
         model = torch.nn.parallel.DistributedDataParallel(model,
-                                                          device_ids=[args.local_rank],
+                                                          device_ids=[
+                                                              args.local_rank],
                                                           output_device=args.local_rank,
                                                           find_unused_parameters=True)
     elif n_gpu > 1:
@@ -220,15 +235,21 @@ def main():
                 max_query_length=args.max_query_length,
                 is_training=True)
             if args.local_rank == -1 or torch.distributed.get_rank() == 0:
-                logger.info("  Saving train features into cached file %s", cached_train_features_file)
+                logger.info(
+                    "  Saving train features into cached file %s", cached_train_features_file)
                 with open(cached_train_features_file, "wb") as writer:
                     pickle.dump(train_features, writer)
 
-        all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
-        all_start_positions = torch.tensor([f.start_position for f in train_features], dtype=torch.long)
-        all_end_positions = torch.tensor([f.end_position for f in train_features], dtype=torch.long)
+        all_input_ids = torch.tensor(
+            [f.input_ids for f in train_features], dtype=torch.long)
+        all_input_mask = torch.tensor(
+            [f.input_mask for f in train_features], dtype=torch.long)
+        all_segment_ids = torch.tensor(
+            [f.segment_ids for f in train_features], dtype=torch.long)
+        all_start_positions = torch.tensor(
+            [f.start_position for f in train_features], dtype=torch.long)
+        all_end_positions = torch.tensor(
+            [f.end_position for f in train_features], dtype=torch.long)
         train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids,
                                    all_start_positions, all_end_positions)
         if args.local_rank == -1:
@@ -236,8 +257,10 @@ def main():
         else:
             train_sampler = DistributedSampler(train_data)
 
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
-        num_train_optimization_steps = len(train_dataloader) // args.gradient_accumulation_steps * args.num_train_epochs
+        train_dataloader = DataLoader(
+            train_data, sampler=train_sampler, batch_size=args.train_batch_size)
+        num_train_optimization_steps = len(
+            train_dataloader) // args.gradient_accumulation_steps * args.num_train_epochs
         # if args.local_rank != -1:
         #     num_train_optimization_steps = num_train_optimization_steps // torch.distributed.get_world_size()
 
@@ -250,16 +273,19 @@ def main():
 
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
         optimizer_grouped_parameters = [
-            {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
-            {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
-            ]
+            {'params': [p for n, p in param_optimizer if not any(
+                nd in n for nd in no_decay)], 'weight_decay': 0.01},
+            {'params': [p for n, p in param_optimizer if any(
+                nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        ]
 
         if args.fp16:
             try:
                 from apex.optimizers import FP16_Optimizer
                 from apex.optimizers import FusedAdam
             except ImportError:
-                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
+                raise ImportError(
+                    "Please install apex from https://www.github.com/nvidia/apex to use distributed and fp16 training.")
 
             optimizer = FusedAdam(optimizer_grouped_parameters,
                                   lr=args.learning_rate,
@@ -268,7 +294,8 @@ def main():
             if args.loss_scale == 0:
                 optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True)
             else:
-                optimizer = FP16_Optimizer(optimizer, static_loss_scale=args.loss_scale)
+                optimizer = FP16_Optimizer(
+                    optimizer, static_loss_scale=args.loss_scale)
             warmup_linear = WarmupLinearSchedule(warmup=args.warmup_proportion,
                                                  t_total=num_train_optimization_steps)
         else:
@@ -289,11 +316,13 @@ def main():
         for epoch in trange(int(args.num_train_epochs), desc="Epoch"):
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration", disable=args.local_rank not in [-1, 0])):
                 if n_gpu == 1:
-                    batch = tuple(t.to(device) for t in batch) # multi-gpu does scattering it-self
+                    # multi-gpu does scattering it-self
+                    batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, start_positions, end_positions = batch
-                loss = model(input_ids, segment_ids, input_mask, start_positions, end_positions)
+                loss = model(input_ids, segment_ids, input_mask,
+                             start_positions, end_positions)
                 if n_gpu > 1:
-                    loss = loss.mean() # mean() to average on multi-gpu.
+                    loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
                     loss = loss / args.gradient_accumulation_steps
 
@@ -305,7 +334,9 @@ def main():
                     if args.fp16:
                         # modify learning rate with special warm up BERT uses
                         # if args.fp16 is False, BertAdam is used and handles this automatically
-                        lr_this_step = args.learning_rate * warmup_linear.get_lr(global_step, args.warmup_proportion)
+                        lr_this_step = args.learning_rate * \
+                            warmup_linear.get_lr(
+                                global_step, args.warmup_proportion)
                         for param_group in optimizer.param_groups:
                             param_group['lr'] = lr_this_step
                     optimizer.step()
@@ -313,12 +344,14 @@ def main():
                     global_step += 1
                     if args.local_rank in [-1, 0]:
                         if not args.fp16:
-                            tb_writer.add_scalar('lr', optimizer.get_lr()[0], global_step)
+                            tb_writer.add_scalar(
+                                'lr', optimizer.get_lr()[0], global_step)
                         tb_writer.add_scalar('loss', loss.item(), global_step)
 
     if args.do_train and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
         # Save a trained model, configuration and tokenizer
-        model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
+        model_to_save = model.module if hasattr(
+            model, 'module') else model  # Only save the model it-self
 
         # If we save using the predefined names, we can load using `from_pretrained`
         output_model_file = os.path.join(args.output_dir, WEIGHTS_NAME)
@@ -330,7 +363,8 @@ def main():
 
         # Load a trained model and vocabulary that you have fine-tuned
         model = BertForQuestionAnswering.from_pretrained(args.output_dir)
-        tokenizer = BertTokenizer.from_pretrained(args.output_dir, do_lower_case=args.do_lower_case)
+        tokenizer = BertTokenizer.from_pretrained(
+            args.output_dir, do_lower_case=args.do_lower_case)
 
         # Good practice: save your training arguments together with the trained model
         output_args_file = os.path.join(args.output_dir, 'training_args.bin')
@@ -356,14 +390,20 @@ def main():
         logger.info("  Num split examples = %d", len(eval_features))
         logger.info("  Batch size = %d", args.predict_batch_size)
 
-        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
-        all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
-        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_example_index)
+        all_input_ids = torch.tensor(
+            [f.input_ids for f in eval_features], dtype=torch.long)
+        all_input_mask = torch.tensor(
+            [f.input_mask for f in eval_features], dtype=torch.long)
+        all_segment_ids = torch.tensor(
+            [f.segment_ids for f in eval_features], dtype=torch.long)
+        all_example_index = torch.arange(
+            all_input_ids.size(0), dtype=torch.long)
+        eval_data = TensorDataset(
+            all_input_ids, all_input_mask, all_segment_ids, all_example_index)
         # Run prediction for full data
         eval_sampler = SequentialSampler(eval_data)
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
+        eval_dataloader = DataLoader(
+            eval_data, sampler=eval_sampler, batch_size=args.predict_batch_size)
 
         model.eval()
         all_results = []
@@ -375,7 +415,8 @@ def main():
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
             with torch.no_grad():
-                batch_start_logits, batch_end_logits = model(input_ids, segment_ids, input_mask)
+                batch_start_logits, batch_end_logits = model(
+                    input_ids, segment_ids, input_mask)
             for i, example_index in enumerate(example_indices):
                 start_logits = batch_start_logits[i].detach().cpu().tolist()
                 end_logits = batch_end_logits[i].detach().cpu().tolist()
@@ -384,9 +425,12 @@ def main():
                 all_results.append(RawResult(unique_id=unique_id,
                                              start_logits=start_logits,
                                              end_logits=end_logits))
-        output_prediction_file = os.path.join(args.output_dir, "predictions.json")
-        output_nbest_file = os.path.join(args.output_dir, "nbest_predictions.json")
-        output_null_log_odds_file = os.path.join(args.output_dir, "null_odds.json")
+        output_prediction_file = os.path.join(
+            args.output_dir, "predictions.json")
+        output_nbest_file = os.path.join(
+            args.output_dir, "nbest_predictions.json")
+        output_null_log_odds_file = os.path.join(
+            args.output_dir, "null_odds.json")
         write_predictions(eval_examples, eval_features, all_results,
                           args.n_best_size, args.max_answer_length,
                           args.do_lower_case, output_prediction_file,

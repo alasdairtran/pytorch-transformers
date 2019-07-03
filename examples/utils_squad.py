@@ -24,8 +24,7 @@ import logging
 import math
 from io import open
 
-from transformers.tokenization import (BasicTokenizer,
-                                                  whitespace_tokenize)
+from transformers.tokenization import BasicTokenizer, whitespace_tokenize
 
 logger = logging.getLogger(__name__)
 
@@ -147,14 +146,16 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                         answer_offset = answer["answer_start"]
                         answer_length = len(orig_answer_text)
                         start_position = char_to_word_offset[answer_offset]
-                        end_position = char_to_word_offset[answer_offset + answer_length - 1]
+                        end_position = char_to_word_offset[answer_offset +
+                                                           answer_length - 1]
                         # Only add answers where the text can be exactly recovered from the
                         # document. If this CAN'T happen it's likely due to weird Unicode
                         # stuff so we will just skip the example.
                         #
                         # Note that this means for training mode, every example is NOT
                         # guaranteed to be preserved.
-                        actual_text = " ".join(doc_tokens[start_position:(end_position + 1)])
+                        actual_text = " ".join(
+                            doc_tokens[start_position:(end_position + 1)])
                         cleaned_answer_text = " ".join(
                             whitespace_tokenize(orig_answer_text))
                         if actual_text.find(cleaned_answer_text) == -1:
@@ -250,7 +251,8 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
 
             for i in range(doc_span.length):
                 split_token_index = doc_span.start + i
-                token_to_orig_map[len(tokens)] = tok_to_orig_index[split_token_index]
+                token_to_orig_map[len(
+                    tokens)] = tok_to_orig_index[split_token_index]
 
                 is_max_context = _check_is_max_context(doc_spans, doc_span_index,
                                                        split_token_index)
@@ -308,7 +310,8 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                 logger.info("token_is_max_context: %s" % " ".join([
                     "%d:%s" % (x, y) for (x, y) in token_is_max_context.items()
                 ]))
-                logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
+                logger.info("input_ids: %s" %
+                            " ".join([str(x) for x in input_ids]))
                 logger.info(
                     "input_mask: %s" % " ".join([str(x) for x in input_mask]))
                 logger.info(
@@ -316,7 +319,8 @@ def convert_examples_to_features(examples, tokenizer, max_seq_length,
                 if is_training and example.is_impossible:
                     logger.info("impossible example")
                 if is_training and not example.is_impossible:
-                    answer_text = " ".join(tokens[start_position:(end_position + 1)])
+                    answer_text = " ".join(
+                        tokens[start_position:(end_position + 1)])
                     logger.info("start_position: %d" % (start_position))
                     logger.info("end_position: %d" % (end_position))
                     logger.info(
@@ -407,7 +411,8 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
             continue
         num_left_context = position - doc_span.start
         num_right_context = end - position
-        score = min(num_left_context, num_right_context) + 0.01 * doc_span.length
+        score = min(num_left_context, num_right_context) + \
+            0.01 * doc_span.length
         if best_score is None or score > best_score:
             best_score = score
             best_span_index = span_index
@@ -458,7 +463,8 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
             end_indexes = _get_best_indexes(result.end_logits, n_best_size)
             # if we could have irrelevant answers, get the min score of irrelevant
             if version_2_with_negative:
-                feature_null_score = result.start_logits[0] + result.end_logits[0]
+                feature_null_score = result.start_logits[0] + \
+                    result.end_logits[0]
                 if feature_null_score < score_null:
                     score_null = feature_null_score
                     min_null_feature_index = feature_index
@@ -514,10 +520,12 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                 break
             feature = features[pred.feature_index]
             if pred.start_index > 0:  # this is a non-null prediction
-                tok_tokens = feature.tokens[pred.start_index:(pred.end_index + 1)]
+                tok_tokens = feature.tokens[pred.start_index:(
+                    pred.end_index + 1)]
                 orig_doc_start = feature.token_to_orig_map[pred.start_index]
                 orig_doc_end = feature.token_to_orig_map[pred.end_index]
-                orig_tokens = example.doc_tokens[orig_doc_start:(orig_doc_end + 1)]
+                orig_tokens = example.doc_tokens[orig_doc_start:(
+                    orig_doc_end + 1)]
                 tok_text = " ".join(tok_tokens)
 
                 # De-tokenize WordPieces that have been split off.
@@ -529,7 +537,8 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
                 tok_text = " ".join(tok_text.split())
                 orig_text = " ".join(orig_tokens)
 
-                final_text = get_final_text(tok_text, orig_text, do_lower_case, verbose_logging)
+                final_text = get_final_text(
+                    tok_text, orig_text, do_lower_case, verbose_logging)
                 if final_text in seen_predictions:
                     continue
 
@@ -554,9 +563,9 @@ def write_predictions(all_examples, all_features, all_results, n_best_size,
 
             # In very rare edge cases we could only have single null prediction.
             # So we just create a nonce prediction in this case to avoid failure.
-            if len(nbest)==1:
+            if len(nbest) == 1:
                 nbest.insert(0,
-                    _NbestPrediction(text="empty", start_logit=0.0, end_logit=0.0))
+                             _NbestPrediction(text="empty", start_logit=0.0, end_logit=0.0))
 
         # In very rare edge cases we could have no valid predictions. So we
         # just create a nonce prediction in this case to avoid failure.
@@ -709,7 +718,8 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
 
 def _get_best_indexes(logits, n_best_size):
     """Get the n-best logits from a list."""
-    index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
+    index_and_score = sorted(
+        enumerate(logits), key=lambda x: x[1], reverse=True)
 
     best_indexes = []
     for i in range(len(index_and_score)):

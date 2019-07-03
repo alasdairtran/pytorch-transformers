@@ -1,5 +1,5 @@
 from transformers.modeling_transfo_xl import (TransfoXLLMHeadModel,
-                                                         TransfoXLModel)
+                                              TransfoXLModel)
 from transformers.tokenization_transfo_xl import TransfoXLTokenizer
 
 # A lot of models share the same param doc. Use a decorator

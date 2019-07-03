@@ -92,7 +92,8 @@ class MrpcProcessor(DataProcessor):
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {}".format(os.path.join(data_dir, "train.tsv")))
+        logger.info("LOOKING AT {}".format(
+            os.path.join(data_dir, "train.tsv")))
         return self._create_examples(
             self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
@@ -401,7 +402,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
         `cls_token_segment_id` define the segment id associated to the CLS token (0 for BERT, 2 for XLNet)
     """
 
-    label_map = {label : i for i, label in enumerate(label_list)}
+    label_map = {label: i for i, label in enumerate(label_list)}
 
     features = []
     for (ex_index, example) in enumerate(examples):
@@ -464,12 +465,16 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
         padding_length = max_seq_length - len(input_ids)
         if pad_on_left:
             input_ids = ([pad_token] * padding_length) + input_ids
-            input_mask = ([0 if mask_padding_with_zero else 1] * padding_length) + input_mask
-            segment_ids = ([pad_token_segment_id] * padding_length) + segment_ids
+            input_mask = ([0 if mask_padding_with_zero else 1]
+                          * padding_length) + input_mask
+            segment_ids = ([pad_token_segment_id] *
+                           padding_length) + segment_ids
         else:
             input_ids = input_ids + ([pad_token] * padding_length)
-            input_mask = input_mask + ([0 if mask_padding_with_zero else 1] * padding_length)
-            segment_ids = segment_ids + ([pad_token_segment_id] * padding_length)
+            input_mask = input_mask + \
+                ([0 if mask_padding_with_zero else 1] * padding_length)
+            segment_ids = segment_ids + \
+                ([pad_token_segment_id] * padding_length)
 
         assert len(input_ids) == max_seq_length
         assert len(input_mask) == max_seq_length
@@ -486,18 +491,20 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
             logger.info("tokens: %s" % " ".join(
-                    [str(x) for x in tokens]))
-            logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-            logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
+                [str(x) for x in tokens]))
+            logger.info("input_ids: %s" %
+                        " ".join([str(x) for x in input_ids]))
+            logger.info("input_mask: %s" %
+                        " ".join([str(x) for x in input_mask]))
             logger.info(
-                    "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+                "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
             logger.info("label: %s (id = %d)" % (example.label, label_id))
 
         features.append(
-                InputFeatures(input_ids=input_ids,
-                              input_mask=input_mask,
-                              segment_ids=segment_ids,
-                              label_id=label_id))
+            InputFeatures(input_ids=input_ids,
+                          input_mask=input_mask,
+                          segment_ids=segment_ids,
+                          label_id=label_id))
     return features
 
 
@@ -566,6 +573,7 @@ def compute_metrics(task_name, preds, labels):
         return {"acc": simple_accuracy(preds, labels)}
     else:
         raise KeyError(task_name)
+
 
 processors = {
     "cola": ColaProcessor,

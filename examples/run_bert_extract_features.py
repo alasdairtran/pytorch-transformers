@@ -23,14 +23,15 @@ import logging
 import re
 
 import torch
-from transformers.modeling import BertModel
-from transformers.tokenization import BertTokenizer
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
 
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.INFO)
+from transformers.modeling import BertModel
+from transformers.tokenization import BertTokenizer
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -129,8 +130,10 @@ def convert_examples_to_features(examples, seq_length, tokenizer):
             logger.info("*** Example ***")
             logger.info("unique_id: %s" % (example.unique_id))
             logger.info("tokens: %s" % " ".join([str(x) for x in tokens]))
-            logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-            logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
+            logger.info("input_ids: %s" %
+                        " ".join([str(x) for x in input_ids]))
+            logger.info("input_mask: %s" %
+                        " ".join([str(x) for x in input_mask]))
             logger.info(
                 "input_type_ids: %s" % " ".join([str(x) for x in input_type_ids]))
 
@@ -188,24 +191,26 @@ def read_examples(input_file):
 def main():
     parser = argparse.ArgumentParser()
 
-    ## Required parameters
+    # Required parameters
     parser.add_argument("--input_file", default=None, type=str, required=True)
     parser.add_argument("--output_file", default=None, type=str, required=True)
     parser.add_argument("--bert_model", default=None, type=str, required=True,
                         help="Bert pre-trained model selected in the list: bert-base-uncased, "
                              "bert-large-uncased, bert-base-cased, bert-base-multilingual, bert-base-chinese.")
 
-    ## Other parameters
-    parser.add_argument("--do_lower_case", action='store_true', help="Set this flag if you are using an uncased model.")
+    # Other parameters
+    parser.add_argument("--do_lower_case", action='store_true',
+                        help="Set this flag if you are using an uncased model.")
     parser.add_argument("--layers", default="-1,-2,-3,-4", type=str)
     parser.add_argument("--max_seq_length", default=128, type=int,
                         help="The maximum total input sequence length after WordPiece tokenization. Sequences longer "
-                            "than this will be truncated, and sequences shorter than this will be padded.")
-    parser.add_argument("--batch_size", default=32, type=int, help="Batch size for predictions.")
+                        "than this will be truncated, and sequences shorter than this will be padded.")
+    parser.add_argument("--batch_size", default=32, type=int,
+                        help="Batch size for predictions.")
     parser.add_argument("--local_rank",
                         type=int,
                         default=-1,
-                        help = "local_rank for distributed training on gpus")
+                        help="local_rank for distributed training on gpus")
     parser.add_argument("--no_cuda",
                         action='store_true',
                         help="Whether not to use CUDA when available")
@@ -213,18 +218,21 @@ def main():
     args = parser.parse_args()
 
     if args.local_rank == -1 or args.no_cuda:
-        device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
+        device = torch.device(
+            "cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
         n_gpu = torch.cuda.device_count()
     else:
         device = torch.device("cuda", args.local_rank)
         n_gpu = 1
         # Initializes the distributed backend which will take care of sychronizing nodes/GPUs
         torch.distributed.init_process_group(backend='nccl')
-    logger.info("device: {} n_gpu: {} distributed training: {}".format(device, n_gpu, bool(args.local_rank != -1)))
+    logger.info("device: {} n_gpu: {} distributed training: {}".format(
+        device, n_gpu, bool(args.local_rank != -1)))
 
     layer_indexes = [int(x) for x in args.layers.split(",")]
 
-    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
+    tokenizer = BertTokenizer.from_pretrained(
+        args.bert_model, do_lower_case=args.do_lower_case)
 
     examples = read_examples(args.input_file)
 
@@ -244,8 +252,10 @@ def main():
     elif n_gpu > 1:
         model = torch.nn.DataParallel(model)
 
-    all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
-    all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
+    all_input_ids = torch.tensor(
+        [f.input_ids for f in features], dtype=torch.long)
+    all_input_mask = torch.tensor(
+        [f.input_mask for f in features], dtype=torch.long)
     all_example_index = torch.arange(all_input_ids.size(0), dtype=torch.long)
 
     eval_data = TensorDataset(all_input_ids, all_input_mask, all_example_index)
@@ -253,7 +263,8 @@ def main():
         eval_sampler = SequentialSampler(eval_data)
     else:
         eval_sampler = DistributedSampler(eval_data)
-    eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.batch_size)
+    eval_dataloader = DataLoader(
+        eval_data, sampler=eval_sampler, batch_size=args.batch_size)
 
     model.eval()
     with open(args.output_file, "w", encoding='utf-8') as writer:
@@ -261,7 +272,8 @@ def main():
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
 
-            all_encoder_layers, _ = model(input_ids, token_type_ids=None, attention_mask=input_mask)
+            all_encoder_layers, _ = model(
+                input_ids, token_type_ids=None, attention_mask=input_mask)
             all_encoder_layers = all_encoder_layers
 
             for b, example_index in enumerate(example_indices):
@@ -274,7 +286,8 @@ def main():
                 for (i, token) in enumerate(feature.tokens):
                     all_layers = []
                     for (j, layer_index) in enumerate(layer_indexes):
-                        layer_output = all_encoder_layers[int(layer_index)].detach().cpu().numpy()
+                        layer_output = all_encoder_layers[int(
+                            layer_index)].detach().cpu().numpy()
                         layer_output = layer_output[b]
                         layers = collections.OrderedDict()
                         layers["index"] = layer_index
