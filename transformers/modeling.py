@@ -285,7 +285,7 @@ class BertSelfAttention(nn.Module):
             raise ValueError(
                 "The hidden size (%d) is not a multiple of the number of attention "
                 "heads (%d)" % (config.hidden_size, config.num_attention_heads))
-        self.output_attentions = config.output_attentions
+        self.output_attentions = True
 
         self.num_attention_heads = config.num_attention_heads
         self.attention_head_size = int(
@@ -450,8 +450,8 @@ class BertLayer(nn.Module):
 class BertEncoder(nn.Module):
     def __init__(self, config):
         super(BertEncoder, self).__init__()
-        self.output_attentions = config.output_attentions
-        self.output_hidden_states = config.output_hidden_states
+        self.output_attentions = True
+        self.output_hidden_states = True
         self.layer = nn.ModuleList([BertLayer(config)
                                     for _ in range(config.num_hidden_layers)])
 
