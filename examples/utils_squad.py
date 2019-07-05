@@ -24,7 +24,7 @@ import logging
 import math
 from io import open
 
-from transformers.tokenization import BasicTokenizer, whitespace_tokenize
+from transformers.tokenization_bert import BasicTokenizer, whitespace_tokenize
 
 logger = logging.getLogger(__name__)
 

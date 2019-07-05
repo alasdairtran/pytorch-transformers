@@ -33,9 +33,9 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from transformers import CONFIG_NAME, WEIGHTS_NAME
-from transformers.modeling import BertForQuestionAnswering
+from transformers.modeling_bert import BertForQuestionAnswering
 from transformers.optimization import BertAdam, WarmupLinearSchedule
-from transformers.tokenization import BertTokenizer
+from transformers.tokenization_bert import BertTokenizer
 from utils_squad import (RawResult, convert_examples_to_features,
                          read_squad_examples, write_predictions)
 

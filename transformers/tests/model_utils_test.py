@@ -24,9 +24,9 @@ import pytest
 import torch
 
 from transformers import PretrainedConfig, PreTrainedModel
-from transformers.modeling import (PRETRAINED_CONFIG_ARCHIVE_MAP,
-                                   PRETRAINED_MODEL_ARCHIVE_MAP, BertConfig,
-                                   BertModel)
+from transformers.modeling_bert import (PRETRAINED_CONFIG_ARCHIVE_MAP,
+                                        PRETRAINED_MODEL_ARCHIVE_MAP,
+                                        BertConfig, BertModel)
 
 
 class ModelUtilsTest(unittest.TestCase):

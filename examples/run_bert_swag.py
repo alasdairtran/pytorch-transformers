@@ -35,9 +35,9 @@ from tqdm import tqdm, trange
 from transformers.file_utils import (CONFIG_NAME,
                                      PYTORCH_PRETRAINED_BERT_CACHE,
                                      WEIGHTS_NAME)
-from transformers.modeling import BertConfig, BertForMultipleChoice
+from transformers.modeling_bert import BertConfig, BertForMultipleChoice
 from transformers.optimization import BertAdam, WarmupLinearSchedule
-from transformers.tokenization import BertTokenizer
+from transformers.tokenization_bert import BertTokenizer
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',

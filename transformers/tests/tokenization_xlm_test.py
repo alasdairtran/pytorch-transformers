@@ -21,20 +21,20 @@ import shutil
 import unittest
 
 import pytest
+from pytorch_pretrained_bert.tokenization_xlm import (PRETRAINED_VOCAB_ARCHIVE_MAP,
+                                                      XLMTokenizer)
 
-from transformers.tokenization_gpt2 import (PRETRAINED_VOCAB_ARCHIVE_MAP,
-                                            GPT2Tokenizer)
 
-
-class GPT2TokenizationTest(unittest.TestCase):
+class XLMTokenizationTest(unittest.TestCase):
 
     def test_full_tokenizer(self):
         """ Adapted from Sennrich et al. 2015 and https://github.com/rsennrich/subword-nmt """
         vocab = ["l", "o", "w", "e", "r", "s", "t", "i", "d", "n",
-                 "lo", "low", "er",
-                 "low", "lowest", "newer", "wider"]
+                 "w</w>", "r</w>", "t</w>",
+                 "lo", "low", "er</w>",
+                 "low</w>", "lowest</w>", "newer</w>", "wider</w>"]
         vocab_tokens = dict(zip(vocab, range(len(vocab))))
-        merges = ["#version: 0.2", "l o", "lo w", "e r", ""]
+        merges = ["l o 123", "lo w 1456", "e r</w> 1789", ""]
         with open("/tmp/openai_tokenizer_vocab_test.json", "w") as fp:
             fp.write(json.dumps(vocab_tokens))
             vocab_file = fp.name
@@ -42,24 +42,24 @@ class GPT2TokenizationTest(unittest.TestCase):
             fp.write("\n".join(merges))
             merges_file = fp.name
 
-        tokenizer = GPT2Tokenizer(
+        tokenizer = XLMTokenizer(
             vocab_file, merges_file, special_tokens=["<unk>", "<pad>"])
         os.remove(vocab_file)
         os.remove(merges_file)
 
         text = "lower"
-        bpe_tokens = ["low", "er"]
+        bpe_tokens = ["low", "er</w>"]
         tokens = tokenizer.tokenize(text)
         self.assertListEqual(tokens, bpe_tokens)
 
         input_tokens = tokens + ["<unk>"]
-        input_bpe_tokens = [13, 12, 16]
+        input_bpe_tokens = [14, 15, 20]
         self.assertListEqual(
             tokenizer.convert_tokens_to_ids(input_tokens), input_bpe_tokens)
 
         vocab_file, merges_file, special_tokens_file = tokenizer.save_vocabulary(
             vocab_path="/tmp/")
-        tokenizer_2 = GPT2Tokenizer.from_pretrained("/tmp/")
+        tokenizer_2 = XLMTokenizer.from_pretrained("/tmp/")
         os.remove(vocab_file)
         os.remove(merges_file)
         os.remove(special_tokens_file)
@@ -70,11 +70,11 @@ class GPT2TokenizationTest(unittest.TestCase):
             [tokenizer_2.encoder, tokenizer_2.decoder, tokenizer_2.bpe_ranks,
              tokenizer_2.special_tokens, tokenizer_2.special_tokens_decoder])
 
-    # @pytest.mark.slow
+    @pytest.mark.slow
     def test_tokenizer_from_pretrained(self):
-        cache_dir = "/tmp/transformers_test/"
+        cache_dir = "/tmp/pytorch_pretrained_bert_test/"
         for model_name in list(PRETRAINED_VOCAB_ARCHIVE_MAP.keys())[:1]:
-            tokenizer = GPT2Tokenizer.from_pretrained(
+            tokenizer = XLMTokenizer.from_pretrained(
                 model_name, cache_dir=cache_dir)
             shutil.rmtree(cache_dir)
             self.assertIsNotNone(tokenizer)

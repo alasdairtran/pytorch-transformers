@@ -26,8 +26,8 @@ import torch
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
 
-from transformers.modeling import BertModel
-from transformers.tokenization import BertTokenizer
+from transformers.modeling_bert import BertModel
+from transformers.tokenization_bert import BertTokenizer
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',

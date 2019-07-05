@@ -33,9 +33,9 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from transformers import CONFIG_NAME, WEIGHTS_NAME
-from transformers.modeling import BertForSequenceClassification
+from transformers.modeling_bert import BertForSequenceClassification
 from transformers.optimization import BertAdam, WarmupLinearSchedule
-from transformers.tokenization import BertTokenizer
+from transformers.tokenization_bert import BertTokenizer
 from utils_glue import (compute_metrics, convert_examples_to_features,
                         output_modes, processors)
 

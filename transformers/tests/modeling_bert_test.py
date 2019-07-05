@@ -14,21 +14,18 @@
 # limitations under the License.
 from __future__ import absolute_import, division, print_function
 
-import json
-import os
-import random
 import shutil
 import unittest
 
 import pytest
-import torch
-
-from transformers import (BertConfig, BertForMaskedLM, BertForMultipleChoice,
-                          BertForNextSentencePrediction, BertForPreTraining,
-                          BertForQuestionAnswering,
-                          BertForSequenceClassification,
-                          BertForTokenClassification, BertModel)
-from transformers.modeling import PRETRAINED_MODEL_ARCHIVE_MAP
+from pytorch_pretrained_bert import (BertConfig, BertForMaskedLM,
+                                     BertForMultipleChoice,
+                                     BertForNextSentencePrediction,
+                                     BertForPreTraining,
+                                     BertForQuestionAnswering,
+                                     BertForSequenceClassification,
+                                     BertForTokenClassification, BertModel)
+from pytorch_pretrained_bert.modeling_bert import PRETRAINED_MODEL_ARCHIVE_MAP
 
 from .model_tests_commons import (ConfigTester, create_and_check_commons,
                                   ids_tensor)
@@ -137,6 +134,8 @@ class BertModelTest(unittest.TestCase):
             model.eval()
             sequence_output, pooled_output = model(
                 input_ids, token_type_ids, input_mask)
+            sequence_output, pooled_output = model(input_ids, token_type_ids)
+            sequence_output, pooled_output = model(input_ids)
 
             result = {
                 "sequence_output": sequence_output,

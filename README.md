@@ -934,7 +934,7 @@ all_hidden_states = lower_hidden_states + [hidden_states]
 
 *Outputs* a tuple of (last_hidden_state, new_mems)
 - `softmax_output`: output of the (adaptive) softmax:
-  - if labels is None: log probabilities of tokens, shape [batch_size, sequence_length, n_tokens]
+  - if labels is None: log probabilities of tokens, shape [batch_size, sequence_length, n_tokens] 
   - else: Negative log likelihood of labels tokens with shape [batch_size, sequence_length]
 - `new_mems`: list (num layers) of updated mem states at the entry of each layer each mem state is a torch.FloatTensor of size [self.config.mem_len, batch_size, self.config.d_model]. Note that the first two dimensions are transposed in `mems` with regards to `input_ids`.
 
@@ -1110,8 +1110,8 @@ The differences with `BertAdam` is that `OpenAIAdam` compensate for bias as in t
 #### Learning Rate Schedules
 The `.optimization` module also provides additional schedules in the form of schedule objects that inherit from `_LRSchedule`.
 All `_LRSchedule` subclasses accept `warmup` and `t_total` arguments at construction.
-When an `_LRSchedule` object is passed into `BertAdam` or `OpenAIAdam`,
-the `warmup` and `t_total` arguments on the optimizer are ignored and the ones in the `_LRSchedule` object are used.
+When an `_LRSchedule` object is passed into `BertAdam` or `OpenAIAdam`, 
+the `warmup` and `t_total` arguments on the optimizer are ignored and the ones in the `_LRSchedule` object are used. 
 An overview of the implemented schedules:
 - `ConstantLR`: always returns learning rate 1.
 - `WarmupConstantSchedule`: Linearly increases learning rate from 0 to 1 over `warmup` fraction of training steps.
@@ -1174,7 +1174,7 @@ We showcase several fine-tuning examples based on (and extended from) [the origi
 
 #### GLUE results on dev set
 
-We get the following results on the dev set of GLUE benchmark with an uncased BERT base
+We get the following results on the dev set of GLUE benchmark with an uncased BERT base 
 model. All experiments were run on a P100 GPU with a batch size of 32.
 
 | Task | Metric | Result |

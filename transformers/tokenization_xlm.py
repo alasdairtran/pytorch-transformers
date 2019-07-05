@@ -26,7 +26,7 @@ from io import open
 from tqdm import tqdm
 
 from .file_utils import cached_path
-from .tokenization import BasicTokenizer
+from .tokenization_bert import BasicTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -324,7 +324,6 @@ class XLMTokenizer(object):
 
         index = 0
         with open(merge_file, "w", encoding="utf-8") as writer:
-            writer.write(u'#version: 0.2\n')
             for bpe_tokens, token_index in sorted(self.bpe_ranks.items(), key=lambda kv: kv[1]):
                 if index != token_index:
                     logger.warning("Saving vocabulary to {}: BPE merge indices are not consecutive."

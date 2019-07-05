@@ -31,9 +31,9 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from transformers import CONFIG_NAME, WEIGHTS_NAME
-from transformers.modeling import BertForPreTraining
+from transformers.modeling_bert import BertForPreTraining
 from transformers.optimization import BertAdam, WarmupLinearSchedule
-from transformers.tokenization import BertTokenizer
+from transformers.tokenization_bert import BertTokenizer
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',

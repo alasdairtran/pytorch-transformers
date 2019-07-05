@@ -90,7 +90,7 @@ class XLNetTokenizationTest(unittest.TestCase):
 
     @pytest.mark.slow
     def test_tokenizer_from_pretrained(self):
-        cache_dir = "/tmp/pytorch_pretrained_bert_test/"
+        cache_dir = "/tmp/transformers_test/"
         for model_name in list(PRETRAINED_VOCAB_ARCHIVE_MAP.keys())[:1]:
             tokenizer = XLNetTokenizer.from_pretrained(
                 model_name, cache_dir=cache_dir)

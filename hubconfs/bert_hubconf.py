@@ -1,10 +1,10 @@
-from transformers.modeling import (BertForMaskedLM, BertForMultipleChoice,
-                                   BertForNextSentencePrediction,
-                                   BertForPreTraining,
-                                   BertForQuestionAnswering,
-                                   BertForSequenceClassification,
-                                   BertForTokenClassification, BertModel)
-from transformers.tokenization import BertTokenizer
+from transformers.modeling_bert import (BertForMaskedLM, BertForMultipleChoice,
+                                        BertForNextSentencePrediction,
+                                        BertForPreTraining,
+                                        BertForQuestionAnswering,
+                                        BertForSequenceClassification,
+                                        BertForTokenClassification, BertModel)
+from transformers.tokenization_bert import BertTokenizer
 
 # A lot of models share the same param doc. Use a decorator
 # to save typing

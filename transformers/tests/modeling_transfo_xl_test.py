@@ -177,7 +177,7 @@ class TransfoXLModelTest(unittest.TestCase):
         def create_and_check_transfo_xl_commons(self, config, input_ids_1, input_ids_2, lm_labels):
             inputs_dict = {'input_ids': input_ids_1}
             create_and_check_commons(
-                self, config, inputs_dict, test_pruning=False)
+                self, config, inputs_dict, test_pruning=False, test_torchscript=False)
 
     def test_default(self):
         self.run_tester(TransfoXLModelTest.TransfoXLModelTester(self))
@@ -189,7 +189,7 @@ class TransfoXLModelTest(unittest.TestCase):
 
     @pytest.mark.slow
     def test_model_from_pretrained(self):
-        cache_dir = "/tmp/pytorch_pretrained_bert_test/"
+        cache_dir = "/tmp/transformers_test/"
         for model_name in list(PRETRAINED_MODEL_ARCHIVE_MAP.keys())[:1]:
             model = TransfoXLModel.from_pretrained(
                 model_name, cache_dir=cache_dir)

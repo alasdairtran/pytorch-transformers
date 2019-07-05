@@ -9,7 +9,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 from tqdm import tqdm, trange
 
-from transformers.tokenization import BertTokenizer
+from transformers.tokenization_bert import BertTokenizer
 
 
 class DocumentDatabase:
