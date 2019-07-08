@@ -25,6 +25,7 @@ from io import open
 import regex as re
 
 from .file_utils import cached_path
+from .model_utils import clean_up_tokenization
 
 try:
     from functools import lru_cache
@@ -297,9 +298,7 @@ class GPT2Tokenizer(object):
                           for c in text]).decode('utf-8', errors=self.errors)
         if clean_up_tokenization_spaces:
             text = text.replace('<unk>', '')
-            text = text.replace(' .', '.').replace(' ?', '?').replace(' !', '!').replace(' ,', ','
-                                                                                         ).replace(" ' ", "'").replace(" n't", "n't").replace(" 'm", "'m").replace(" do not", " don't"
-                                                                                                                                                                   ).replace(" 's", "'s").replace(" 've", "'ve").replace(" 're", "'re")
+            text = clean_up_tokenization(text)
         return text
 
     def save_vocabulary(self, vocab_path):
