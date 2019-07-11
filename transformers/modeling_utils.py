@@ -26,7 +26,7 @@ from io import open
 
 import torch
 from torch import nn
-from torch.nn import CrossEntropyLoss, MSELoss
+from torch.nn import CrossEntropyLoss
 from torch.nn import functional as F
 
 from .file_utils import cached_path
@@ -175,6 +175,23 @@ class PreTrainedModel(nn.Module):
             self, self.base_model_prefix, self)  # get the base model if needed
         model_to_prune._prune_heads(heads_to_prune)
 
+    def save_pretrained(self, save_directory):
+        """ Save a model with its configuration file to a directory, so that it
+            can be re-loaded using the `from_pretrained(save_directory)` class method.
+        """
+        assert os.path.isdir(
+            save_directory), "Saving path should be a directory where the model and configuration can be saved"
+
+        # Only save the model it-self if we are using distributed training
+        model_to_save = self.module if hasattr(self, 'module') else self
+
+        # If we save using the predefined names, we can load using `from_pretrained`
+        output_model_file = os.path.join(save_directory, WEIGHTS_NAME)
+        output_config_file = os.path.join(save_directory, CONFIG_NAME)
+
+        torch.save(model_to_save.state_dict(), output_model_file)
+        model_to_save.config.to_json_file(output_config_file)
+
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *inputs, **kwargs):
         """
@@ -199,7 +216,8 @@ class PreTrainedModel(nn.Module):
         """
         state_dict = kwargs.pop('state_dict', None)
         cache_dir = kwargs.pop('cache_dir', None)
-        from_tf = kwargs.pop('from_tf', None)
+        from_tf = kwargs.pop('from_tf', False)
+        output_loading_info = kwargs.pop('output_loading_info', False)
 
         # Load config
         config = cls.config_class.from_pretrained(
@@ -250,6 +268,21 @@ class PreTrainedModel(nn.Module):
             # Remove the '.index'
             return cls.load_tf_weights(model, config, resolved_archive_file[:-6])
 
+        # Convert old format to new format if needed from a PyTorch state_dict
+        old_keys = []
+        new_keys = []
+        for key in state_dict.keys():
+            new_key = None
+            if 'gamma' in key:
+                new_key = key.replace('gamma', 'weight')
+            if 'beta' in key:
+                new_key = key.replace('beta', 'bias')
+            if new_key:
+                old_keys.append(key)
+                new_keys.append(new_key)
+        for old_key, new_key in zip(old_keys, new_keys):
+            state_dict[new_key] = state_dict.pop(old_key)
+
         # Load from a PyTorch state_dict
         missing_keys = []
         unexpected_keys = []
@@ -290,6 +323,11 @@ class PreTrainedModel(nn.Module):
 
         if hasattr(model, 'tie_weights'):
             model.tie_weights()  # make sure word embedding weights are still tied
+
+        if output_loading_info:
+            loading_info = {"missing_keys": missing_keys,
+                            "unexpected_keys": unexpected_keys, "error_msgs": error_msgs}
+            return model, loading_info
 
         return model
 
@@ -522,10 +560,10 @@ class SequenceSummary(nn.Module):
                 - 'token_ids' => supply a Tensor of classification token indices (GPT/GPT-2)
                 - 'attn' => Not implemented now, use multi-head attention
             summary_use_proj: Add a projection after the vector extraction
-            summary_num_classes: If > 0: the projection outputs to n classes (otherwise to hidden_size)
-            summary_activation:
-                'tanh' => add a tanh activation to the output
-                    None => no activation
+            summary_proj_to_labels: If True, the projection outputs to config.num_labels classes (otherwise to hidden_size). Default: False.
+            summary_activation: 'tanh' => add a tanh activation to the output, Other => no activation. Default 
+            summary_first_dropout: Add a dropout before the projection and activation
+            summary_last_dropout: Add a dropout after the projection and activation
     """
 
     def __init__(self, config):
@@ -541,8 +579,8 @@ class SequenceSummary(nn.Module):
 
         self.summary = nn.Identity()
         if hasattr(config, 'summary_use_proj') and config.summary_use_proj:
-            if hasattr(config, 'summary_num_classes') and config.summary_num_classes > 0:
-                num_classes = config.summary_num_classes
+            if hasattr(config, 'summary_proj_to_labels') and config.summary_proj_to_labels and config.num_labels > 0:
+                num_classes = config.num_labels
             else:
                 num_classes = config.hidden_size
             self.summary = nn.Linear(config.hidden_size, num_classes)
@@ -551,7 +589,13 @@ class SequenceSummary(nn.Module):
         if hasattr(config, 'summary_activation') and config.summary_activation == 'tanh':
             self.activation = nn.Tanh()
 
-        self.dropout = nn.Dropout(config.summary_dropout)
+        self.first_dropout = nn.Identity()
+        if hasattr(config, 'summary_first_dropout') and config.summary_first_dropout > 0:
+            self.first_dropout = nn.Dropout(config.summary_first_dropout)
+
+        self.last_dropout = nn.Identity()
+        if hasattr(config, 'summary_last_dropout') and config.summary_last_dropout > 0:
+            self.last_dropout = nn.Dropout(config.summary_last_dropout)
 
     def forward(self, hidden_states, token_ids=None):
         """ hidden_states: float Tensor in shape [bsz, seq_len, hidden_size], the hidden-states of the last layer.
@@ -580,9 +624,10 @@ class SequenceSummary(nn.Module):
         elif self.summary_type == 'attn':
             raise NotImplementedError
 
+        output = self.first_dropout(output)
         output = self.summary(output)
         output = self.activation(output)
-        output = self.dropout(output)
+        output = self.last_dropout(output)
 
         return output
 
@@ -649,10 +694,3 @@ def prune_layer(layer, index, dim=None):
     else:
         raise ValueError(
             "Can't prune layer of class {}".format(layer.__class__))
-
-
-def clean_up_tokenization(out_string):
-    out_string.replace(' .', '.').replace(' ?', '?').replace(' !', '!').replace(' ,', ','
-                                                                                ).replace(" ' ", "'").replace(" n't", "n't").replace(" 'm", "'m").replace(" do not", " don't"
-                                                                                                                                                          ).replace(" 's", "'s").replace(" 've", "'ve").replace(" 're", "'re")
-    return out_string

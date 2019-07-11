@@ -35,19 +35,18 @@ import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
 from torch.nn.parameter import Parameter
 
-from .file_utils import cached_path
-from .model_utils import (CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig,
-                          PreTrainedModel)
 from .modeling_bert import BertLayerNorm as LayerNorm
 from .modeling_transfo_xl_utilities import (ProjectedAdaptiveLogSoftmax,
                                             sample_logits)
+from .modeling_utils import (CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig,
+                             PreTrainedModel)
 
 logger = logging.getLogger(__name__)
 
-PRETRAINED_MODEL_ARCHIVE_MAP = {
+TRANSFO_XL_PRETRAINED_MODEL_ARCHIVE_MAP = {
     'transfo-xl-wt103': "https://s3.amazonaws.com/models.huggingface.co/bert/transfo-xl-wt103-pytorch_model.bin",
 }
-PRETRAINED_CONFIG_ARCHIVE_MAP = {
+TRANSFO_XL_PRETRAINED_CONFIG_ARCHIVE_MAP = {
     'transfo-xl-wt103': "https://s3.amazonaws.com/models.huggingface.co/bert/transfo-xl-wt103-config.json",
 }
 
@@ -185,7 +184,7 @@ def load_tf_weights_in_transfo_xl(model, config, tf_path):
 class TransfoXLConfig(PretrainedConfig):
     """Configuration class to store the configuration of a `TransfoXLModel`.
     """
-    pretrained_config_archive_map = PRETRAINED_CONFIG_ARCHIVE_MAP
+    pretrained_config_archive_map = TRANSFO_XL_PRETRAINED_CONFIG_ARCHIVE_MAP
 
     def __init__(self,
                  vocab_size_or_config_json_file=267735,
@@ -868,7 +867,7 @@ class TransfoXLPreTrainedModel(PreTrainedModel):
         a simple interface for dowloading and loading pretrained models.
     """
     config_class = TransfoXLConfig
-    pretrained_model_archive_map = PRETRAINED_MODEL_ARCHIVE_MAP
+    pretrained_model_archive_map = TRANSFO_XL_PRETRAINED_MODEL_ARCHIVE_MAP
     load_tf_weights = load_tf_weights_in_transfo_xl
     base_model_prefix = "transformer"
 

@@ -17,15 +17,12 @@ from __future__ import (absolute_import, division, print_function,
 
 import json
 import os
-import shutil
 import unittest
 
-import pytest
+from transformers.tokenization_xlm import VOCAB_FILES_NAMES, XLMTokenizer
 
-from transformers.tokenization_xlm import (PRETRAINED_VOCAB_ARCHIVE_MAP,
-                                           XLMTokenizer)
-
-from.tokenization_tests_commons import create_and_check_tokenizer_commons
+from .tokenization_tests_commons import (TemporaryDirectory,
+                                         create_and_check_tokenizer_commons)
 
 
 class XLMTokenizationTest(unittest.TestCase):
@@ -35,42 +32,33 @@ class XLMTokenizationTest(unittest.TestCase):
         vocab = ["l", "o", "w", "e", "r", "s", "t", "i", "d", "n",
                  "w</w>", "r</w>", "t</w>",
                  "lo", "low", "er</w>",
-                 "low</w>", "lowest</w>", "newer</w>", "wider</w>"]
+                 "low</w>", "lowest</w>", "newer</w>", "wider</w>", "<unk>"]
         vocab_tokens = dict(zip(vocab, range(len(vocab))))
         merges = ["l o 123", "lo w 1456", "e r</w> 1789", ""]
-        with open("/tmp/openai_tokenizer_vocab_test.json", "w") as fp:
-            fp.write(json.dumps(vocab_tokens))
-            vocab_file = fp.name
-        with open("/tmp/openai_tokenizer_merges_test.txt", "w") as fp:
-            fp.write("\n".join(merges))
-            merges_file = fp.name
 
-        create_and_check_tokenizer_commons(
-            self, XLMTokenizer, vocab_file, merges_file, special_tokens=["<unk>", "<pad>"])
+        with TemporaryDirectory() as tmpdirname:
+            vocab_file = os.path.join(
+                tmpdirname, VOCAB_FILES_NAMES['vocab_file'])
+            merges_file = os.path.join(
+                tmpdirname, VOCAB_FILES_NAMES['merges_file'])
+            with open(vocab_file, "w") as fp:
+                fp.write(json.dumps(vocab_tokens))
+            with open(merges_file, "w") as fp:
+                fp.write("\n".join(merges))
 
-        tokenizer = XLMTokenizer(
-            vocab_file, merges_file, special_tokens=["<unk>", "<pad>"])
-        os.remove(vocab_file)
-        os.remove(merges_file)
+            create_and_check_tokenizer_commons(self, XLMTokenizer, tmpdirname)
 
-        text = "lower"
-        bpe_tokens = ["low", "er</w>"]
-        tokens = tokenizer.tokenize(text)
-        self.assertListEqual(tokens, bpe_tokens)
+            tokenizer = XLMTokenizer(vocab_file, merges_file)
 
-        input_tokens = tokens + ["<unk>"]
-        input_bpe_tokens = [14, 15, 20]
-        self.assertListEqual(
-            tokenizer.convert_tokens_to_ids(input_tokens), input_bpe_tokens)
+            text = "lower"
+            bpe_tokens = ["low", "er</w>"]
+            tokens = tokenizer.tokenize(text)
+            self.assertListEqual(tokens, bpe_tokens)
 
-    @pytest.mark.slow
-    def test_tokenizer_from_pretrained(self):
-        cache_dir = "/tmp/transformers_test/"
-        for model_name in list(PRETRAINED_VOCAB_ARCHIVE_MAP.keys())[:1]:
-            tokenizer = XLMTokenizer.from_pretrained(
-                model_name, cache_dir=cache_dir)
-            shutil.rmtree(cache_dir)
-            self.assertIsNotNone(tokenizer)
+            input_tokens = tokens + ["<unk>"]
+            input_bpe_tokens = [14, 15, 20]
+            self.assertListEqual(
+                tokenizer.convert_tokens_to_ids(input_tokens), input_bpe_tokens)
 
 
 if __name__ == '__main__':

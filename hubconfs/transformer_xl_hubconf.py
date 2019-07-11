@@ -44,7 +44,7 @@ def transformerXLTokenizer(*args, **kwargs):
 
     Example:
         >>> import torch
-        >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'transformerXLTokenizer', 'transfo-xl-wt103')
+        >>> tokenizer = torch.hub.load('huggingface/pytorch-transformers', 'transformerXLTokenizer', 'transfo-xl-wt103')
 
         >>> text = "Who was Jim Henson ?"
         >>> tokenized_text = tokenizer.tokenize(tokenized_text)
@@ -62,7 +62,7 @@ def transformerXLModel(*args, **kwargs):
     Example:
         # Load the tokenizer
         >>> import torch
-        >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'transformerXLTokenizer', 'transfo-xl-wt103')
+        >>> tokenizer = torch.hub.load('huggingface/pytorch-transformers', 'transformerXLTokenizer', 'transfo-xl-wt103')
 
         #  Prepare tokenized input
         >>> text_1 = "Who was Jim Henson ?"
@@ -75,7 +75,7 @@ def transformerXLModel(*args, **kwargs):
         >>> tokens_tensor_2 = torch.tensor([indexed_tokens_2])
 
         # Load transformerXLModel
-        >>> model = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'transformerXLModel', 'transfo-xl-wt103')
+        >>> model = torch.hub.load('huggingface/pytorch-transformers', 'transformerXLModel', 'transfo-xl-wt103')
         >>> model.eval()
 
         # Predict hidden states features for each layer
@@ -97,7 +97,7 @@ def transformerXLLMHeadModel(*args, **kwargs):
     Example:
         # Load the tokenizer
         >>> import torch
-        >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'transformerXLTokenizer', 'transfo-xl-wt103')
+        >>> tokenizer = torch.hub.load('huggingface/pytorch-transformers', 'transformerXLTokenizer', 'transfo-xl-wt103')
 
         #  Prepare tokenized input
         >>> text_1 = "Who was Jim Henson ?"
@@ -110,7 +110,7 @@ def transformerXLLMHeadModel(*args, **kwargs):
         >>> tokens_tensor_2 = torch.tensor([indexed_tokens_2])
 
         # Load transformerXLLMHeadModel
-        >>> model = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'transformerXLLMHeadModel', 'transfo-xl-wt103')
+        >>> model = torch.hub.load('huggingface/pytorch-transformers', 'transformerXLLMHeadModel', 'transfo-xl-wt103')
         >>> model.eval()
 
         # Predict hidden states features for each layer

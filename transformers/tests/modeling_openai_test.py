@@ -22,8 +22,8 @@ import torch
 from transformers import (OpenAIGPTConfig, OpenAIGPTDoubleHeadsModel,
                           OpenAIGPTLMHeadModel, OpenAIGPTModel)
 
-from .model_tests_commons import (ConfigTester, GPTModelTester,
-                                  create_and_check_commons)
+from .modeling_tests_commons import (ConfigTester, GPTModelTester,
+                                     create_and_check_commons)
 
 
 class OpenAIModelTest(unittest.TestCase):

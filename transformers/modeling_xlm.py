@@ -21,7 +21,6 @@ import itertools
 import json
 import logging
 import math
-import os
 import sys
 from io import open
 
@@ -31,17 +30,15 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from torch.nn import functional as F
 
-from .file_utils import cached_path
-from .model_utils import (CONFIG_NAME, WEIGHTS_NAME, PretrainedConfig,
-                          PreTrainedModel, SequenceSummary, SQuADHead,
-                          prune_linear_layer)
+from .modeling_utils import (PretrainedConfig, PreTrainedModel,
+                             SequenceSummary, SQuADHead, prune_linear_layer)
 
 logger = logging.getLogger(__name__)
 
-PRETRAINED_MODEL_ARCHIVE_MAP = {
+XLM_PRETRAINED_MODEL_ARCHIVE_MAP = {
     'xlm-mlm-en-2048': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-en-2048-pytorch_model.bin",
 }
-PRETRAINED_CONFIG_ARCHIVE_MAP = {
+XLM_PRETRAINED_CONFIG_ARCHIVE_MAP = {
     'xlm-mlm-en-2048': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-en-2048-config.json",
 }
 
@@ -49,7 +46,7 @@ PRETRAINED_CONFIG_ARCHIVE_MAP = {
 class XLMConfig(PretrainedConfig):
     """Configuration class to store the configuration of a `XLMModel`.
     """
-    pretrained_config_archive_map = PRETRAINED_CONFIG_ARCHIVE_MAP
+    pretrained_config_archive_map = XLM_PRETRAINED_CONFIG_ARCHIVE_MAP
 
     def __init__(self,
                  vocab_size_or_config_json_file=30145,
@@ -77,10 +74,11 @@ class XLMConfig(PretrainedConfig):
 
                  finetuning_task=None,
                  num_labels=2,
-                 summary_type='last',
+                 summary_type='first',
                  summary_use_proj=True,
-                 summary_activation='tanh',
-                 summary_dropout=0.1,
+                 summary_activation=None,
+                 summary_proj_to_labels=True,
+                 summary_first_dropout=0.1,
                  start_n_top=5,
                  end_n_top=5,
                  **kwargs):
@@ -162,7 +160,8 @@ class XLMConfig(PretrainedConfig):
             self.summary_type = summary_type
             self.summary_use_proj = summary_use_proj
             self.summary_activation = summary_activation
-            self.summary_dropout = summary_dropout
+            self.summary_proj_to_labels = summary_proj_to_labels
+            self.summary_first_dropout = summary_first_dropout
             self.start_n_top = start_n_top
             self.end_n_top = end_n_top
         else:
@@ -202,7 +201,7 @@ def gelu(x):
     GELU activation
     https://arxiv.org/abs/1606.08415
     https://github.com/huggingface/pytorch-openai-transformer-lm/blob/master/model_pytorch.py#L14
-    https://github.com/huggingface/pytorch-pretrained-BERT/blob/master/modeling.py
+    https://github.com/huggingface/pytorch-transformers/blob/master/modeling.py
     """
     # return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
     return 0.5 * x * (1.0 + torch.erf(x / math.sqrt(2.0)))
@@ -372,7 +371,7 @@ class XLMPreTrainedModel(PreTrainedModel):
         a simple interface for dowloading and loading pretrained models.
     """
     config_class = XLMConfig
-    pretrained_model_archive_map = PRETRAINED_MODEL_ARCHIVE_MAP
+    pretrained_model_archive_map = XLM_PRETRAINED_MODEL_ARCHIVE_MAP
     load_tf_weights = None
     base_model_prefix = "transformer"
 

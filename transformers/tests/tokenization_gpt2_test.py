@@ -17,15 +17,12 @@ from __future__ import (absolute_import, division, print_function,
 
 import json
 import os
-import shutil
 import unittest
 
-import pytest
+from transformers.tokenization_gpt2 import VOCAB_FILES_NAMES, GPT2Tokenizer
 
-from transformers.tokenization_gpt2 import (PRETRAINED_VOCAB_ARCHIVE_MAP,
-                                            GPT2Tokenizer)
-
-from .tokenization_tests_commons import create_and_check_tokenizer_commons
+from .tokenization_tests_commons import (TemporaryDirectory,
+                                         create_and_check_tokenizer_commons)
 
 
 class GPT2TokenizationTest(unittest.TestCase):
@@ -34,42 +31,35 @@ class GPT2TokenizationTest(unittest.TestCase):
         """ Adapted from Sennrich et al. 2015 and https://github.com/rsennrich/subword-nmt """
         vocab = ["l", "o", "w", "e", "r", "s", "t", "i", "d", "n",
                  "lo", "low", "er",
-                 "low", "lowest", "newer", "wider"]
+                 "low", "lowest", "newer", "wider", "<unk>"]
         vocab_tokens = dict(zip(vocab, range(len(vocab))))
         merges = ["#version: 0.2", "l o", "lo w", "e r", ""]
-        with open("/tmp/openai_tokenizer_vocab_test.json", "w") as fp:
-            fp.write(json.dumps(vocab_tokens))
-            vocab_file = fp.name
-        with open("/tmp/openai_tokenizer_merges_test.txt", "w") as fp:
-            fp.write("\n".join(merges))
-            merges_file = fp.name
+        special_tokens_map = {"unk_token": "<unk>"}
 
-        create_and_check_tokenizer_commons(
-            self, GPT2Tokenizer, vocab_file, merges_file, special_tokens=["<unk>", "<pad>"])
+        with TemporaryDirectory() as tmpdirname:
+            vocab_file = os.path.join(
+                tmpdirname, VOCAB_FILES_NAMES['vocab_file'])
+            merges_file = os.path.join(
+                tmpdirname, VOCAB_FILES_NAMES['merges_file'])
+            with open(vocab_file, "w") as fp:
+                fp.write(json.dumps(vocab_tokens))
+            with open(merges_file, "w") as fp:
+                fp.write("\n".join(merges))
 
-        tokenizer = GPT2Tokenizer(
-            vocab_file, merges_file, special_tokens=["<unk>", "<pad>"])
-        text = "lower"
-        bpe_tokens = ["low", "er"]
-        tokens = tokenizer.tokenize(text)
-        self.assertListEqual(tokens, bpe_tokens)
+            create_and_check_tokenizer_commons(
+                self, GPT2Tokenizer, tmpdirname, **special_tokens_map)
 
-        input_tokens = tokens + ["<unk>"]
-        input_bpe_tokens = [13, 12, 16]
-        self.assertListEqual(
-            tokenizer.convert_tokens_to_ids(input_tokens), input_bpe_tokens)
+            tokenizer = GPT2Tokenizer(
+                vocab_file, merges_file, **special_tokens_map)
+            text = "lower"
+            bpe_tokens = ["low", "er"]
+            tokens = tokenizer.tokenize(text)
+            self.assertListEqual(tokens, bpe_tokens)
 
-        os.remove(vocab_file)
-        os.remove(merges_file)
-
-    # @pytest.mark.slow
-    def test_tokenizer_from_pretrained(self):
-        cache_dir = "/tmp/transformers_test/"
-        for model_name in list(PRETRAINED_VOCAB_ARCHIVE_MAP.keys())[:1]:
-            tokenizer = GPT2Tokenizer.from_pretrained(
-                model_name, cache_dir=cache_dir)
-            shutil.rmtree(cache_dir)
-            self.assertIsNotNone(tokenizer)
+            input_tokens = tokens + [tokenizer.unk_token]
+            input_bpe_tokens = [13, 12, 17]
+            self.assertListEqual(
+                tokenizer.convert_tokens_to_ids(input_tokens), input_bpe_tokens)
 
 
 if __name__ == '__main__':

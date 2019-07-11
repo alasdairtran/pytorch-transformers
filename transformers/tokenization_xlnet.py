@@ -16,26 +16,29 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import json
 import logging
 import os
-import sys
 import unicodedata
-from io import open
 from shutil import copyfile
 
 import six
 
-from .file_utils import cached_path
-from .model_utils import clean_up_tokenization
+from .tokenization_utils import PreTrainedTokenizer, clean_up_tokenization
 
 logger = logging.getLogger(__name__)
 
-PRETRAINED_VOCAB_ARCHIVE_MAP = {
-    'xlnet-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/xlnet-large-cased-spiece.model",
+VOCAB_FILES_NAMES = {'vocab_file': 'spiece.model'}
+
+PRETRAINED_VOCAB_FILES_MAP = {
+    'vocab_file':
+    {
+        'xlnet-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/xlnet-large-cased-spiece.model",
+    }
 }
-VOCAB_NAME = 'spiece.model'
-SPECIAL_TOKENS_NAME = 'special_tokens.txt'
+
+PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
+    'xlnet-large-cased': 512,
+}
 
 SPIECE_UNDERLINE = u'▁'
 
@@ -47,95 +50,30 @@ SEG_ID_SEP = 3
 SEG_ID_PAD = 4
 
 
-class XLNetTokenizer(object):
+class XLNetTokenizer(PreTrainedTokenizer):
     """
         SentencePiece based tokenizer. Peculiarities:
             - requires SentencePiece: https://github.com/google/sentencepiece
     """
-    # Tokens
-    special_symbols = {
-        "<unk>": 0,
-        "<s>": 1,
-        "</s>": 2,
-        "<cls>": 3,
-        "<sep>": 4,
-        "<pad>": 5,
-        "<mask>": 6,
-        "<eod>": 7,
-        "<eop>": 8,
-    }
+    vocab_files_names = VOCAB_FILES_NAMES
+    pretrained_vocab_files_map = PRETRAINED_VOCAB_FILES_MAP
+    max_model_input_sizes = PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES
 
-    @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path, cache_dir=None, *inputs, **kwargs):
-        """
-        Instantiate a PreTrainedBertModel from a pre-trained model file.
-        Download and cache the pre-trained model file if needed.
-        """
-        if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[pretrained_model_name_or_path]
-            special_tokens_file = None
-            if '-cased' in pretrained_model_name_or_path and kwargs.get('do_lower_case', True):
-                logger.warning("The pre-trained model you are loading is a cased model but you have not set "
-                               "`do_lower_case` to False. We are setting `do_lower_case=False` for you but "
-                               "you may want to check this behavior.")
-                kwargs['do_lower_case'] = False
-            elif '-cased' not in pretrained_model_name_or_path and not kwargs.get('do_lower_case', True):
-                logger.warning("The pre-trained model you are loading is an uncased model but you have set "
-                               "`do_lower_case` to False. We are setting `do_lower_case=True` for you "
-                               "but you may want to check this behavior.")
-                kwargs['do_lower_case'] = True
-        else:
-            vocab_file = os.path.join(
-                pretrained_model_name_or_path, VOCAB_NAME)
-            special_tokens_file = os.path.join(
-                pretrained_model_name_or_path, SPECIAL_TOKENS_NAME)
-            if not os.path.exists(special_tokens_file):
-                special_tokens_file = None
-            else:
-                logger.info("loading special tokens file {}".format(
-                    special_tokens_file))
-        # redirect to the cache, if necessary
-        try:
-            resolved_vocab_file = cached_path(vocab_file, cache_dir=cache_dir)
-        except EnvironmentError:
-            if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-                logger.error(
-                    "Couldn't reach server at '{}' to download vocabulary.".format(
-                        vocab_file))
-            else:
-                logger.error(
-                    "Model name '{}' was not found in model name list ({}). "
-                    "We assumed '{}' was a path or url but couldn't find files {}"
-                    "at this path or url.".format(
-                        pretrained_model_name_or_path,
-                        ', '.join(PRETRAINED_VOCAB_ARCHIVE_MAP.keys()),
-                        pretrained_model_name_or_path,
-                        vocab_file))
-            return None
-        if resolved_vocab_file == vocab_file:
-            logger.info("loading vocabulary file {}".format(vocab_file))
-        else:
-            logger.info("loading vocabulary file {} from cache at {}".format(
-                vocab_file, resolved_vocab_file))
-        # Instantiate tokenizer.
-        if special_tokens_file and 'special_tokens' not in kwargs:
-            special_tokens = open(special_tokens_file,
-                                  encoding='utf-8').read().split('\n')[:-1]
-        else:
-            special_tokens = kwargs.pop('special_tokens', [])
-        tokenizer = cls(resolved_vocab_file,
-                        special_tokens=special_tokens, *inputs, **kwargs)
-        return tokenizer
-
-    def __init__(self, vocab_file, special_tokens=None, max_len=None,
-                 do_lower_case=False, remove_space=True, keep_accents=False):
+    def __init__(self, vocab_file, max_len=None,
+                 do_lower_case=False, remove_space=True, keep_accents=False,
+                 bos_token="<s>", eos_token="</s>", unk_token="<unk>", sep_token="<sep>",
+                 pad_token="<pad>", cls_token="<cls>", mask_token="<mask>",
+                 additional_special_tokens=["<eop>", "<eod>"], **kwargs):
+        super(XLNetTokenizer, self).__init__(bos_token=bos_token, eos_token=eos_token,
+                                             unk_token=unk_token, sep_token=sep_token,
+                                             pad_token=pad_token, cls_token=cls_token,
+                                             mask_token=mask_token, additional_special_tokens=additional_special_tokens, **kwargs)
         try:
             import sentencepiece as spm
         except ImportError:
             logger.warning("You need to install SentencePiece to use XLNetTokenizer: https://github.com/google/sentencepiece"
                            "pip install sentencepiece")
 
-        self.max_len = max_len if max_len is not None else int(1e12)
         self.do_lower_case = do_lower_case
         self.remove_space = remove_space
         self.keep_accents = keep_accents
@@ -143,52 +81,10 @@ class XLNetTokenizer(object):
 
         self.sp_model = spm.SentencePieceProcessor()
         self.sp_model.Load(vocab_file)
-        self.special_tokens = {}
-        self.special_tokens_decoder = {}
-        self.set_special_tokens(special_tokens)
 
     @property
-    def UNK_TOKEN(self):
-        return "<unk>"
-
-    @property
-    def SEP_TOKEN(self):
-        return "<sep>"
-
-    @property
-    def PAD_TOKEN(self):
-        return "<pad>"
-
-    @property
-    def CLS_TOKEN(self):
-        return "<cls>"
-
-    @property
-    def MASK_TOKEN(self):
-        return "<mask>"
-
-    @property
-    def UNK_ID(self):
-        return self.special_symbols["<unk>"]
-
-    @property
-    def SEP_ID(self):
-        return self.special_symbols["<sep>"]
-
-    @property
-    def PAD_ID(self):
-        return self.special_symbols["<pad>"]
-
-    @property
-    def CLS_ID(self):
-        return self.special_symbols["<cls>"]
-
-    @property
-    def MASK_ID(self):
-        return self.special_symbols["<mask>"]
-
-    def __len__(self):
-        return len(self.encoder) + len(self.special_tokens)
+    def vocab_size(self):
+        return len(self.sp_model)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -204,21 +100,6 @@ class XLNetTokenizer(object):
                            "pip install sentencepiece")
         self.sp_model = spm.SentencePieceProcessor()
         self.sp_model.Load(self.vocab_file)
-
-    def set_special_tokens(self, special_tokens):
-        """ Add a list of additional tokens to the encoder.
-            The additional tokens are indexed starting from the last index of the
-            current vocabulary in the order of the `special_tokens` list.
-        """
-        if not special_tokens:
-            self.special_tokens = {}
-            self.special_tokens_decoder = {}
-            return
-        self.special_tokens = dict((tok, len(self.sp_model) + i)
-                                   for i, tok in enumerate(special_tokens))
-        self.special_tokens_decoder = {
-            v: k for k, v in self.special_tokens.items()}
-        logger.info("Special tokens: %s", str(self.special_tokens))
 
     def preprocess_text(self, inputs):
         if self.remove_space:
@@ -239,7 +120,7 @@ class XLNetTokenizer(object):
 
         return outputs
 
-    def tokenize(self, text, return_unicode=True, sample=False):
+    def _tokenize(self, text, return_unicode=True, sample=False):
         """ Tokenize a string.
             return_unicode is used only for py2
         """
@@ -278,81 +159,33 @@ class XLNetTokenizer(object):
 
         return new_pieces
 
-    def convert_tokens_to_ids(self, tokens, sample=False):
-        """ Converts a sequence of tokens into ids using the vocab. """
-        ids = []
-        if isinstance(tokens, str) or (sys.version_info[0] == 2 and isinstance(tokens, unicode)):
-            if tokens in self.special_tokens:
-                return self.special_tokens[tokens]
-            else:
-                return self.sp_model.PieceToId(tokens)
-        for token in tokens:
-            if token in self.special_tokens:
-                ids.append(self.special_tokens[token])
-            else:
-                ids.append(self.sp_model.PieceToId(token))
-        if len(ids) > self.max_len:
-            logger.warning(
-                "Token indices sequence length is longer than the specified maximum "
-                " sequence length for this XLNet model ({} > {}). Running this"
-                " sequence through the model will result in indexing errors".format(
-                    len(ids), self.max_len)
-            )
-        return ids
+    def _convert_token_to_id(self, token):
+        """ Converts a token (str/unicode) in an id using the vocab. """
+        return self.sp_model.PieceToId(token)
 
-    def convert_ids_to_tokens(self, ids, return_unicode=True, skip_special_tokens=False):
-        """Converts a sequence of ids in tokens."""
-        tokens = []
-        for i in ids:
-            if i in self.special_tokens_decoder:
-                if not skip_special_tokens:
-                    tokens.append(self.special_tokens_decoder[i])
-            else:
-                tokens.append(self.sp_model.IdToPiece(i))
+    def _convert_id_to_token(self, index, return_unicode=True):
+        """Converts an index (integer) in a token (string/unicode) using the vocab."""
+        token = self.sp_model.IdToPiece(index)
+        if six.PY2 and return_unicode and isinstance(token, str):
+            token = token.decode('utf-8')
+        return token
 
-        if six.PY2 and return_unicode:
-            ret_pieces = []
-            for piece in tokens:
-                if isinstance(piece, str):
-                    piece = piece.decode('utf-8')
-                ret_pieces.append(piece)
-            tokens = ret_pieces
-        return tokens
-
-    def encode(self, text, sample=False):
-        return self.convert_tokens_to_ids(self.tokenize(text, sample=sample))
-
-    def decode(self, ids, skip_special_tokens=False, clean_up_tokenization_spaces=True):
+    def _convert_ids_to_string(self, tokens_ids):
         """Converts a sequence of ids in a string."""
-        tokens = self.convert_ids_to_tokens(
-            ids, skip_special_tokens=skip_special_tokens)
-        out_string = ''.join(tokens)
-        if clean_up_tokenization_spaces:
-            out_string = out_string.strip().replace('<unk>', '')
-            out_string = clean_up_tokenization(out_string)
+        out_string = ''.join(tokens_ids)
         return out_string
 
-    def save_vocabulary(self, vocab_path):
+    def save_vocabulary(self, save_directory):
         """ Save the sentencepiece vocabulary (copy original file) and special tokens file
             to a directory.
         """
-        if not os.path.isdir(vocab_path):
+        if not os.path.isdir(save_directory):
             logger.error(
-                "Vocabulary path ({}) should be a directory".format(vocab_path))
+                "Vocabulary path ({}) should be a directory".format(save_directory))
             return
-        out_vocab_file = os.path.join(vocab_path, VOCAB_NAME)
-        special_tokens_file = os.path.join(vocab_path, SPECIAL_TOKENS_NAME)
+        out_vocab_file = os.path.join(
+            save_directory, VOCAB_FILES_NAMES['vocab_file'])
 
         copyfile(self.vocab_file, out_vocab_file)
 
-        index = len(self.sp_model)
-        with open(special_tokens_file, 'w', encoding='utf-8') as writer:
-            for token, token_index in sorted(self.special_tokens.items(), key=lambda kv: kv[1]):
-                if index != token_index:
-                    logger.warning("Saving special tokens vocabulary to {}: BPE indices are not consecutive."
-                                   " Please check that the tokenizer is not corrupted!".format(special_tokens_file))
-                    index = token_index
-                writer.write(token + u'\n')
-                index += 1
-
-        return out_vocab_file, special_tokens_file
+        return (out_vocab_file,)

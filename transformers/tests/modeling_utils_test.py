@@ -14,31 +14,28 @@
 # limitations under the License.
 from __future__ import absolute_import, division, print_function
 
-import json
-import os
-import random
-import shutil
+import logging
 import unittest
 
-import pytest
-import torch
-
-from transformers import PretrainedConfig, PreTrainedModel
-from transformers.modeling_bert import (PRETRAINED_CONFIG_ARCHIVE_MAP,
-                                        PRETRAINED_MODEL_ARCHIVE_MAP,
-                                        BertConfig, BertModel)
+from pytorch_transformers import PretrainedConfig, PreTrainedModel
+from pytorch_transformers.modeling_bert import (BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
+                                                BertConfig, BertModel)
 
 
 class ModelUtilsTest(unittest.TestCase):
     def test_model_from_pretrained(self):
-        for model_name in list(PRETRAINED_MODEL_ARCHIVE_MAP.keys())[:1]:
+        logging.basicConfig(level=logging.INFO)
+        for model_name in list(BERT_PRETRAINED_MODEL_ARCHIVE_MAP.keys())[:1]:
             config = BertConfig.from_pretrained(model_name)
             self.assertIsNotNone(config)
             self.assertIsInstance(config, PretrainedConfig)
 
-            model = BertModel.from_pretrained(model_name)
+            model, loading_info = BertModel.from_pretrained(
+                model_name, output_loading_info=True)
             self.assertIsNotNone(model)
             self.assertIsInstance(model, PreTrainedModel)
+            for value in loading_info.values():
+                self.assertEqual(len(value), 0)
 
             config = BertConfig.from_pretrained(
                 model_name, output_attentions=True, output_hidden_states=True)

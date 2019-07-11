@@ -31,16 +31,16 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from torch.nn.parameter import Parameter
 
-from .file_utils import cached_path
-from .model_utils import (CONFIG_NAME, WEIGHTS_NAME, Conv1D, PretrainedConfig,
-                          PreTrainedModel, SequenceSummary, prune_conv1d_layer)
 from .modeling_bert import BertLayerNorm as LayerNorm
+from .modeling_utils import (CONFIG_NAME, WEIGHTS_NAME, Conv1D,
+                             PretrainedConfig, PreTrainedModel,
+                             SequenceSummary, prune_conv1d_layer)
 
 logger = logging.getLogger(__name__)
 
-PRETRAINED_MODEL_ARCHIVE_MAP = {
+OPENAI_GPT_PRETRAINED_MODEL_ARCHIVE_MAP = {
     "openai-gpt": "https://s3.amazonaws.com/models.huggingface.co/bert/openai-gpt-pytorch_model.bin"}
-PRETRAINED_CONFIG_ARCHIVE_MAP = {
+OPENAI_GPT_PRETRAINED_CONFIG_ARCHIVE_MAP = {
     "openai-gpt": "https://s3.amazonaws.com/models.huggingface.co/bert/openai-gpt-config.json"}
 
 
@@ -140,7 +140,7 @@ ACT_FNS = {"relu": nn.ReLU, "swish": swish, "gelu": gelu}
 class OpenAIGPTConfig(PretrainedConfig):
     """Configuration class to store the configuration of a `OpenAIGPTModel`.
     """
-    pretrained_config_archive_map = PRETRAINED_CONFIG_ARCHIVE_MAP
+    pretrained_config_archive_map = OPENAI_GPT_PRETRAINED_CONFIG_ARCHIVE_MAP
 
     def __init__(
         self,
@@ -158,11 +158,13 @@ class OpenAIGPTConfig(PretrainedConfig):
         layer_norm_epsilon=1e-5,
         initializer_range=0.02,
         predict_special_tokens=True,
+
+        num_labels=1,
         summary_type='token_ids',
         summary_use_proj=True,
-        summary_num_classes=1,
         summary_activation=None,
-        summary_dropout=0.1,
+        summary_proj_to_labels=True,
+        summary_first_dropout=0.1,
         **kwargs
     ):
         """Constructs OpenAIGPTConfig.
@@ -211,11 +213,13 @@ class OpenAIGPTConfig(PretrainedConfig):
             self.layer_norm_epsilon = layer_norm_epsilon
             self.initializer_range = initializer_range
             self.predict_special_tokens = predict_special_tokens
+
+            self.num_labels = num_labels
             self.summary_type = summary_type
             self.summary_use_proj = summary_use_proj
-            self.summary_num_classes = summary_num_classes
             self.summary_activation = summary_activation
-            self.summary_dropout = summary_dropout
+            self.summary_first_dropout = summary_first_dropout
+            self.summary_proj_to_labels = summary_proj_to_labels
         else:
             raise ValueError(
                 "First argument must be either a vocabulary size (int)"
@@ -398,7 +402,7 @@ class OpenAIGPTPreTrainedModel(PreTrainedModel):
         a simple interface for dowloading and loading pretrained models.
     """
     config_class = OpenAIGPTConfig
-    pretrained_model_archive_map = PRETRAINED_MODEL_ARCHIVE_MAP
+    pretrained_model_archive_map = OPENAI_GPT_PRETRAINED_MODEL_ARCHIVE_MAP
     load_tf_weights = load_tf_weights_in_openai_gpt
     base_model_prefix = "transformer"
 

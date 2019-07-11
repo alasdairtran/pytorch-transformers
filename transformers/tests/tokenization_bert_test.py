@@ -16,18 +16,16 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
-import shutil
 import unittest
 from io import open
 
-import pytest
+from transformers.tokenization_bert import (VOCAB_FILES_NAMES, BasicTokenizer,
+                                            BertTokenizer, WordpieceTokenizer,
+                                            _is_control, _is_punctuation,
+                                            _is_whitespace)
 
-from transformers.tokenization_bert import (PRETRAINED_VOCAB_ARCHIVE_MAP,
-                                            BasicTokenizer, BertTokenizer,
-                                            WordpieceTokenizer, _is_control,
-                                            _is_punctuation, _is_whitespace)
-
-from .tokenization_tests_commons import create_and_check_tokenizer_commons
+from .tokenization_tests_commons import (TemporaryDirectory,
+                                         create_and_check_tokenizer_commons)
 
 
 class TokenizationTest(unittest.TestCase):
@@ -35,32 +33,23 @@ class TokenizationTest(unittest.TestCase):
     def test_full_tokenizer(self):
         vocab_tokens = [
             "[UNK]", "[CLS]", "[SEP]", "want", "##want", "##ed", "wa", "un", "runn",
-            "##ing", ","
+            "##ing", ",", "low", "lowest",
         ]
-        with open("/tmp/bert_tokenizer_test.txt", "w", encoding='utf-8') as vocab_writer:
-            vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
-            vocab_file = vocab_writer.name
+        with TemporaryDirectory() as tmpdirname:
+            vocab_file = os.path.join(
+                tmpdirname, VOCAB_FILES_NAMES['vocab_file'])
+            with open(vocab_file, "w", encoding='utf-8') as vocab_writer:
+                vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
 
-        create_and_check_tokenizer_commons(self, BertTokenizer, vocab_file)
+            create_and_check_tokenizer_commons(self, BertTokenizer, tmpdirname)
 
-        tokenizer = BertTokenizer(vocab_file)
+            tokenizer = BertTokenizer(vocab_file)
 
-        tokens = tokenizer.tokenize(u"UNwant\u00E9d,running")
-        self.assertListEqual(
-            tokens, ["un", "##want", "##ed", ",", "runn", "##ing"])
-        self.assertListEqual(tokenizer.convert_tokens_to_ids(
-            tokens), [7, 4, 5, 10, 8, 9])
-
-        os.remove(vocab_file)
-
-    @pytest.mark.slow
-    def test_tokenizer_from_pretrained(self):
-        cache_dir = "/tmp/transformers_test/"
-        for model_name in list(PRETRAINED_VOCAB_ARCHIVE_MAP.keys())[:1]:
-            tokenizer = BertTokenizer.from_pretrained(
-                model_name, cache_dir=cache_dir)
-            shutil.rmtree(cache_dir)
-            self.assertIsNotNone(tokenizer)
+            tokens = tokenizer.tokenize(u"UNwant\u00E9d,running")
+            self.assertListEqual(
+                tokens, ["un", "##want", "##ed", ",", "runn", "##ing"])
+            self.assertListEqual(tokenizer.convert_tokens_to_ids(
+                tokens), [7, 4, 5, 10, 8, 9])
 
     def test_chinese(self):
         tokenizer = BasicTokenizer()
@@ -93,7 +82,7 @@ class TokenizationTest(unittest.TestCase):
         vocab = {}
         for (i, token) in enumerate(vocab_tokens):
             vocab[token] = i
-        tokenizer = WordpieceTokenizer(vocab=vocab)
+        tokenizer = WordpieceTokenizer(vocab=vocab, unk_token="[UNK]")
 
         self.assertListEqual(tokenizer.tokenize(""), [])
 

@@ -20,36 +20,31 @@ import json
 import logging
 import os
 import re
-import sys
 from io import open
 
-from tqdm import tqdm
-
-from .file_utils import cached_path
-from .model_utils import clean_up_tokenization
 from .tokenization_bert import BasicTokenizer
+from .tokenization_utils import PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 
-PRETRAINED_VOCAB_ARCHIVE_MAP = {
-    'xlm-mlm-en-2048': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-en-2048-vocab.json",
+VOCAB_FILES_NAMES = {
+    'vocab_file': 'vocab.json',
+    'merges_file': 'merges.txt',
 }
-PRETRAINED_MERGES_ARCHIVE_MAP = {
-    'xlm-mlm-en-2048': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-en-2048-merges.txt",
-}
-PRETRAINED_VOCAB_POSITIONAL_EMBEDDINGS_SIZE_MAP = {
-    'xlm-mlm-en-2048': 512,
-}
-VOCAB_NAME = 'vocab.json'
-MERGES_NAME = 'merges.txt'
-SPECIAL_TOKENS_NAME = 'special_tokens.txt'
 
-INDEX = {
-    "bos_index": 0,
-    "eos_index": 1,
-    "pad_index": 2,
-    "unk_index": 3,
-    "mask_index": 5
+PRETRAINED_VOCAB_FILES_MAP = {
+    'vocab_file':
+    {
+        'xlm-mlm-en-2048': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-en-2048-vocab.json",
+    },
+    'merges_file':
+    {
+        'xlm-mlm-en-2048': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-en-2048-merges.txt",
+    },
+}
+
+PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
+    'xlm-mlm-en-2048': 512,
 }
 
 
@@ -83,7 +78,7 @@ def text_standardize(text):
     return text.strip()
 
 
-class XLMTokenizer(object):
+class XLMTokenizer(PreTrainedTokenizer):
     """
     BPE tokenizer for XLM, adapted from OpenAI BPE tokenizer. Peculiarities:
         - lower case all inputs
@@ -91,72 +86,20 @@ class XLMTokenizer(object):
         - argument special_tokens and function set_special_tokens:
             can be used to add additional symbols (ex: "__classify__") to a vocabulary.
     """
-    @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path, cache_dir=None, *inputs, **kwargs):
-        """
-        Instantiate a PreTrainedBertModel from a pre-trained model file.
-        Download and cache the pre-trained model file if needed.
-        """
-        if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[pretrained_model_name_or_path]
-            merges_file = PRETRAINED_MERGES_ARCHIVE_MAP[pretrained_model_name_or_path]
-            special_tokens_file = None
-        else:
-            vocab_file = os.path.join(
-                pretrained_model_name_or_path, VOCAB_NAME)
-            merges_file = os.path.join(
-                pretrained_model_name_or_path, MERGES_NAME)
-            special_tokens_file = os.path.join(
-                pretrained_model_name_or_path, SPECIAL_TOKENS_NAME)
-            if not os.path.exists(special_tokens_file):
-                special_tokens_file = None
-            else:
-                logger.info("loading special tokens file {}".format(
-                    special_tokens_file))
-        # redirect to the cache, if necessary
-        try:
-            resolved_vocab_file = cached_path(vocab_file, cache_dir=cache_dir)
-            resolved_merges_file = cached_path(
-                merges_file, cache_dir=cache_dir)
-        except EnvironmentError:
-            if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-                logger.error(
-                    "Couldn't reach server at '{}' to download vocabulary.".format(
-                        vocab_file))
-            else:
-                logger.error(
-                    "Model name '{}' was not found in model name list ({}). "
-                    "We assumed '{}' was a path or url but couldn't find files {} and {} "
-                    "at this path or url.".format(
-                        pretrained_model_name_or_path,
-                        ', '.join(PRETRAINED_VOCAB_ARCHIVE_MAP.keys()),
-                        pretrained_model_name_or_path,
-                        vocab_file, merges_file))
-            return None
-        if resolved_vocab_file == vocab_file and resolved_merges_file == merges_file:
-            logger.info("loading vocabulary file {}".format(vocab_file))
-            logger.info("loading merges file {}".format(merges_file))
-        else:
-            logger.info("loading vocabulary file {} from cache at {}".format(
-                vocab_file, resolved_vocab_file))
-            logger.info("loading merges file {} from cache at {}".format(
-                merges_file, resolved_merges_file))
-        if pretrained_model_name_or_path in PRETRAINED_VOCAB_POSITIONAL_EMBEDDINGS_SIZE_MAP:
-            # if we're using a pretrained model, ensure the tokenizer wont index sequences longer
-            # than the number of positional embeddings
-            max_len = PRETRAINED_VOCAB_POSITIONAL_EMBEDDINGS_SIZE_MAP[pretrained_model_name_or_path]
-            kwargs['max_len'] = min(kwargs.get('max_len', int(1e12)), max_len)
-        # Instantiate tokenizer.
-        if special_tokens_file and 'special_tokens' not in kwargs:
-            special_tokens = open(special_tokens_file,
-                                  encoding='utf-8').read().split('\n')[:-1]
-        else:
-            special_tokens = kwargs.pop('special_tokens', [])
-        tokenizer = cls(resolved_vocab_file, resolved_merges_file,
-                        special_tokens=special_tokens, *inputs, **kwargs)
-        return tokenizer
+    vocab_files_names = VOCAB_FILES_NAMES
+    pretrained_vocab_files_map = PRETRAINED_VOCAB_FILES_MAP
+    max_model_input_sizes = PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES
 
-    def __init__(self, vocab_file, merges_file, special_tokens=None, max_len=None):
+    def __init__(self, vocab_file, merges_file, unk_token="<unk>", bos_token="<s>",
+                 sep_token="</s>", pad_token="<pad>", cls_token="</s>",
+                 mask_token="<special1>", additional_special_tokens=["<special0>",
+                                                                     "<special1>", "<special2>", "<special3>", "<special4>", "<special5>",
+                                                                     "<special6>", "<special7>", "<special8>", "<special9>"], **kwargs):
+        super(XLMTokenizer, self).__init__(unk_token=unk_token, bos_token=bos_token,
+                                           sep_token=sep_token, pad_token=pad_token,
+                                           cls_token=cls_token, mask_token=mask_token,
+                                           additional_special_tokens=additional_special_tokens,
+                                           **kwargs)
         try:
             import ftfy
             import spacy
@@ -166,41 +109,19 @@ class XLMTokenizer(object):
         except ImportError:
             logger.warning(
                 "ftfy or spacy is not installed using BERT BasicTokenizer instead of SpaCy & ftfy.")
-            self.nlp = BasicTokenizer(do_lower_case=True,
-                                      never_split=special_tokens if special_tokens is not None else [])
+            self.nlp = BasicTokenizer(do_lower_case=True)
             self.fix_text = None
 
-        self.max_len = max_len if max_len is not None else int(1e12)
         self.encoder = json.load(open(vocab_file, encoding="utf-8"))
         self.decoder = {v: k for k, v in self.encoder.items()}
         merges = open(merges_file, encoding='utf-8').read().split('\n')[:-1]
         merges = [tuple(merge.split()[:2]) for merge in merges]
         self.bpe_ranks = dict(zip(merges, range(len(merges))))
         self.cache = {}
-        self.special_tokens = {}
-        self.special_tokens_decoder = {}
-        self.set_special_tokens(special_tokens)
 
-    def __len__(self):
-        return len(self.encoder) + len(self.special_tokens)
-
-    def set_special_tokens(self, special_tokens):
-        """ Add a list of additional tokens to the encoder.
-            The additional tokens are indexed starting from the last index of the
-            current vocabulary in the order of the `special_tokens` list.
-        """
-        if not special_tokens:
-            self.special_tokens = {}
-            self.special_tokens_decoder = {}
-            return
-        self.special_tokens = dict((tok, len(self.encoder) + i)
-                                   for i, tok in enumerate(special_tokens))
-        self.special_tokens_decoder = {
-            v: k for k, v in self.special_tokens.items()}
-        if self.fix_text is None:
-            # Using BERT's BasicTokenizer: we can update the tokenizer
-            self.nlp.never_split = special_tokens
-        logger.info("Special tokens {}".format(self.special_tokens))
+    @property
+    def vocab_size(self):
+        return len(self.encoder)
 
     def bpe(self, token):
         word = tuple(token[:-1]) + (token[-1] + '</w>',)
@@ -246,7 +167,7 @@ class XLMTokenizer(object):
         self.cache[token] = word
         return word
 
-    def tokenize(self, text):
+    def _tokenize(self, text):
         """ Tokenize a string. """
         split_tokens = []
         if self.fix_text is None:
@@ -262,61 +183,29 @@ class XLMTokenizer(object):
                     [t for t in self.bpe(token.text.lower()).split(' ')])
         return split_tokens
 
-    def convert_tokens_to_ids(self, tokens):
-        """ Converts a sequence of tokens into ids using the vocab. """
-        ids = []
-        if isinstance(tokens, str) or (sys.version_info[0] == 2 and isinstance(tokens, unicode)):
-            if tokens in self.special_tokens:
-                return self.special_tokens[tokens]
-            else:
-                return self.encoder.get(tokens, 0)
-        for token in tokens:
-            if token in self.special_tokens:
-                ids.append(self.special_tokens[token])
-            else:
-                ids.append(self.encoder.get(token, 0))
-        if len(ids) > self.max_len:
-            logger.warning(
-                "Token indices sequence length is longer than the specified maximum "
-                " sequence length for this OpenAI GPT model ({} > {}). Running this"
-                " sequence through the model will result in indexing errors".format(
-                    len(ids), self.max_len)
-            )
-        return ids
+    def _convert_token_to_id(self, token):
+        """ Converts a token (str/unicode) in an id using the vocab. """
+        return self.encoder.get(token, self.encoder.get(self.unk_token))
 
-    def convert_ids_to_tokens(self, ids, skip_special_tokens=False):
-        """Converts a sequence of ids in BPE tokens using the vocab."""
-        tokens = []
-        for i in ids:
-            if i in self.special_tokens_decoder:
-                if not skip_special_tokens:
-                    tokens.append(self.special_tokens_decoder[i])
-            else:
-                tokens.append(self.decoder[i])
-        return tokens
+    def _convert_id_to_token(self, index):
+        """Converts an index (integer) in a token (string/unicode) using the vocab."""
+        return self.decoder.get(index, self.unk_token)
 
-    def encode(self, text):
-        return self.convert_tokens_to_ids(self.tokenize(text))
-
-    def decode(self, ids, skip_special_tokens=False, clean_up_tokenization_spaces=True):
+    def _convert_ids_to_string(self, tokens_ids):
         """Converts a sequence of ids in a string."""
-        tokens = self.convert_ids_to_tokens(
-            ids, skip_special_tokens=skip_special_tokens)
-        out_string = ''.join(tokens).replace('</w>', ' ').strip()
-        if clean_up_tokenization_spaces:
-            out_string = out_string.replace('<unk>', '')
-            out_string = clean_up_tokenization(out_string)
+        out_string = ''.join(tokens_ids).replace('</w>', ' ').strip()
         return out_string
 
-    def save_vocabulary(self, vocab_path):
+    def save_vocabulary(self, save_directory):
         """Save the tokenizer vocabulary and merge files to a directory."""
-        if not os.path.isdir(vocab_path):
+        if not os.path.isdir(save_directory):
             logger.error(
-                "Vocabulary path ({}) should be a directory".format(vocab_path))
+                "Vocabulary path ({}) should be a directory".format(save_directory))
             return
-        vocab_file = os.path.join(vocab_path, VOCAB_NAME)
-        merge_file = os.path.join(vocab_path, MERGES_NAME)
-        special_tokens_file = os.path.join(vocab_path, SPECIAL_TOKENS_NAME)
+        vocab_file = os.path.join(
+            save_directory, VOCAB_FILES_NAMES['vocab_file'])
+        merge_file = os.path.join(
+            save_directory, VOCAB_FILES_NAMES['merges_file'])
 
         with open(vocab_file, 'w', encoding='utf-8') as f:
             f.write(json.dumps(self.encoder, ensure_ascii=False))
@@ -331,14 +220,4 @@ class XLMTokenizer(object):
                 writer.write(' '.join(bpe_tokens) + u'\n')
                 index += 1
 
-        index = len(self.encoder)
-        with open(special_tokens_file, 'w', encoding='utf-8') as writer:
-            for token, token_index in sorted(self.special_tokens.items(), key=lambda kv: kv[1]):
-                if index != token_index:
-                    logger.warning("Saving special tokens vocabulary to {}: BPE indices are not consecutive."
-                                   " Please check that the tokenizer is not corrupted!".format(special_tokens_file))
-                    index = token_index
-                writer.write(token + u'\n')
-                index += 1
-
-        return vocab_file, merge_file, special_tokens_file
+        return vocab_file, merge_file

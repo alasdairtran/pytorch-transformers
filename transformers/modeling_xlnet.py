@@ -30,17 +30,17 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from torch.nn import functional as F
 
-from .file_utils import cached_path
-from .model_utils import (CONFIG_NAME, WEIGHTS_NAME, PoolerAnswerClass,
-                          PoolerEndLogits, PoolerStartLogits, PretrainedConfig,
-                          PreTrainedModel, SequenceSummary)
+from .modeling_utils import (CONFIG_NAME, WEIGHTS_NAME, PoolerAnswerClass,
+                             PoolerEndLogits, PoolerStartLogits,
+                             PretrainedConfig, PreTrainedModel,
+                             SequenceSummary)
 
 logger = logging.getLogger(__name__)
 
-PRETRAINED_MODEL_ARCHIVE_MAP = {
+XLNET_PRETRAINED_MODEL_ARCHIVE_MAP = {
     'xlnet-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/xlnet-large-cased-pytorch_model.bin",
 }
-PRETRAINED_CONFIG_ARCHIVE_MAP = {
+XLNET_PRETRAINED_CONFIG_ARCHIVE_MAP = {
     'xlnet-large-cased': "https://s3.amazonaws.com/models.huggingface.co/bert/xlnet-large-cased-config.json",
 }
 
@@ -199,7 +199,7 @@ ACT2FN = {"gelu": gelu, "relu": torch.nn.functional.relu, "swish": swish}
 class XLNetConfig(PretrainedConfig):
     """Configuration class to store the configuration of a `XLNetModel`.
     """
-    pretrained_config_archive_map = PRETRAINED_CONFIG_ARCHIVE_MAP
+    pretrained_config_archive_map = XLNET_PRETRAINED_CONFIG_ARCHIVE_MAP
 
     def __init__(self,
                  vocab_size_or_config_json_file=32000,
@@ -231,7 +231,7 @@ class XLNetConfig(PretrainedConfig):
                  summary_type='last',
                  summary_use_proj=True,
                  summary_activation='tanh',
-                 summary_dropout=0.1,
+                 summary_last_dropout=0.1,
                  start_n_top=5,
                  end_n_top=5,
                  **kwargs):
@@ -318,7 +318,7 @@ class XLNetConfig(PretrainedConfig):
             self.summary_type = summary_type
             self.summary_use_proj = summary_use_proj
             self.summary_activation = summary_activation
-            self.summary_dropout = summary_dropout
+            self.summary_last_dropout = summary_last_dropout
             self.start_n_top = start_n_top
             self.end_n_top = end_n_top
         else:
@@ -614,7 +614,7 @@ class XLNetPreTrainedModel(PreTrainedModel):
         a simple interface for dowloading and loading pretrained models.
     """
     config_class = XLNetConfig
-    pretrained_model_archive_map = PRETRAINED_MODEL_ARCHIVE_MAP
+    pretrained_model_archive_map = XLNET_PRETRAINED_MODEL_ARCHIVE_MAP
     load_tf_weights = load_tf_weights_in_xlnet
     base_model_prefix = "transformer"
 

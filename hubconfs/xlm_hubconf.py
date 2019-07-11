@@ -1,8 +1,7 @@
-from pytorch_pretrained_bert.modeling_xlm import (XLMConfig,
-                                                  XLMForQuestionAnswering,
-                                                  XLMForSequenceClassification,
-                                                  XLMModel, XLMWithLMHeadModel)
-from pytorch_pretrained_bert.tokenization_xlm import XLMTokenizer
+from transformers.modeling_xlm import (XLMConfig, XLMForQuestionAnswering,
+                                       XLMForSequenceClassification, XLMModel,
+                                       XLMWithLMHeadModel)
+from transformers.tokenization_xlm import XLMTokenizer
 
 # A lot of models share the same param doc. Use a decorator
 # to save typing
@@ -15,7 +14,7 @@ xlm_start_docstring = """
     Example:
         # Load the tokenizer
         >>> import torch
-        >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'xlmTokenizer', 'xlm-mlm-en-2048')
+        >>> tokenizer = torch.hub.load('huggingface/pytorch-transformers', 'xlmTokenizer', 'xlm-mlm-en-2048')
 
         #  Prepare tokenized input
         >>> text_1 = "Who was Jim Henson ?"
@@ -75,7 +74,7 @@ def xlmTokenizer(*args, **kwargs):
 
     Example:
         >>> import torch
-        >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'xlmTokenizer', 'xlm-mlm-en-2048')
+        >>> tokenizer = torch.hub.load('huggingface/pytorch-transformers', 'xlmTokenizer', 'xlm-mlm-en-2048')
 
         >>> text = "Who was Jim Henson ?"
         >>> indexed_tokens = tokenizer.encode(tokenized_text)
@@ -89,7 +88,7 @@ def xlmTokenizer(*args, **kwargs):
 def xlmModel(*args, **kwargs):
     """
         # Load xlmModel
-        >>> model = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'xlmModel', 'xlm-mlm-en-2048')
+        >>> model = torch.hub.load('huggingface/pytorch-transformers', 'xlmModel', 'xlm-mlm-en-2048')
         >>> model.eval()
 
         # Predict hidden states features for each layer
@@ -114,7 +113,7 @@ def xlmLMHeadModel(*args, **kwargs):
         >>> tokens_tensor_2 = torch.tensor([indexed_tokens_2])
 
         # Load xlnetLMHeadModel
-        >>> model = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'xlnetLMHeadModel', 'xlm-mlm-en-2048')
+        >>> model = torch.hub.load('huggingface/pytorch-transformers', 'xlnetLMHeadModel', 'xlm-mlm-en-2048')
         >>> model.eval()
 
         # Predict hidden states features for each layer
@@ -141,7 +140,7 @@ def xlmLMHeadModel(*args, **kwargs):
 #     Example:
 #         # Load the tokenizer
 #         >>> import torch
-#         >>> tokenizer = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'xlnetTokenizer', 'xlm-mlm-en-2048')
+#         >>> tokenizer = torch.hub.load('huggingface/pytorch-transformers', 'xlnetTokenizer', 'xlm-mlm-en-2048')
 
 #         #  Prepare tokenized input
 #         >>> text1 = "Who was Jim Henson ? Jim Henson was a puppeteer"
@@ -154,7 +153,7 @@ def xlmLMHeadModel(*args, **kwargs):
 #         >>> mc_token_ids = torch.LongTensor([[len(tokenized_text1)-1, len(tokenized_text2)-1]])
 
 #         # Load xlnetForSequenceClassification
-#         >>> model = torch.hub.load('huggingface/pytorch-pretrained-BERT', 'xlnetForSequenceClassification', 'xlm-mlm-en-2048')
+#         >>> model = torch.hub.load('huggingface/pytorch-transformers', 'xlnetForSequenceClassification', 'xlm-mlm-en-2048')
 #         >>> model.eval()
 
 #         # Predict sequence classes logits

@@ -31,7 +31,7 @@ import numpy as np
 import torch
 
 from .file_utils import cached_path
-from .model_utils import clean_up_tokenization
+from .tokenization_utils import PreTrainedTokenizer, clean_up_tokenization
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -41,10 +41,19 @@ else:
 
 logger = logging.getLogger(__name__)
 
-PRETRAINED_VOCAB_ARCHIVE_MAP = {
-    'transfo-xl-wt103': "https://s3.amazonaws.com/models.huggingface.co/bert/transfo-xl-wt103-vocab.bin",
+VOCAB_FILES_NAMES = {
+    'pretrained_vocab_file': 'vocab.bin', 'vocab_file': 'vocab.txt'}
+
+PRETRAINED_VOCAB_FILES_MAP = {
+    'pretrained_vocab_file':
+    {
+        'transfo-xl-wt103': "https://s3.amazonaws.com/models.huggingface.co/bert/transfo-xl-wt103-vocab.bin",
+    }
 }
-VOCAB_NAME = 'vocab.bin'
+
+PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
+    'transfo-xl-wt103': 512,
+}
 
 PRETRAINED_CORPUS_ARCHIVE_MAP = {
     'transfo-xl-wt103': "https://s3.amazonaws.com/models.huggingface.co/bert/transfo-xl-wt103-corpus.bin",
@@ -52,57 +61,25 @@ PRETRAINED_CORPUS_ARCHIVE_MAP = {
 CORPUS_NAME = 'corpus.bin'
 
 
-class TransfoXLTokenizer(object):
+class TransfoXLTokenizer(PreTrainedTokenizer):
     """
     Transformer-XL tokenizer adapted from Vocab class in https://github.com/kimiyoung/transformer-xl
     """
-    @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path, cache_dir=None, *inputs, **kwargs):
-        """
-        Instantiate a TransfoXLTokenizer.
-        The TransfoXLTokenizer.
-        """
-        if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-            vocab_file = PRETRAINED_VOCAB_ARCHIVE_MAP[pretrained_model_name_or_path]
-        else:
-            if os.path.isdir(pretrained_model_name_or_path):
-                vocab_file = os.path.join(
-                    pretrained_model_name_or_path, VOCAB_NAME)
-            else:
-                vocab_file = pretrained_model_name_or_path
-        # redirect to the cache, if necessary
-        try:
-            resolved_vocab_file = cached_path(vocab_file, cache_dir=cache_dir)
-        except EnvironmentError:
-            if pretrained_model_name_or_path in PRETRAINED_VOCAB_ARCHIVE_MAP:
-                logger.error(
-                    "Couldn't reach server at '{}' to download vocabulary.".format(
-                        vocab_file))
-            else:
-                logger.error(
-                    "Model name '{}' was not found in model name list ({}). "
-                    "We assumed '{}' was a path or url but couldn't find files {} "
-                    "at this path or url.".format(
-                        pretrained_model_name_or_path,
-                        ', '.join(PRETRAINED_VOCAB_ARCHIVE_MAP.keys()),
-                        pretrained_model_name_or_path,
-                        vocab_file))
-            return None
-        if resolved_vocab_file == vocab_file:
-            logger.info("loading vocabulary file {}".format(vocab_file))
-        else:
-            logger.info("loading vocabulary file {} from cache at {}".format(
-                vocab_file, resolved_vocab_file))
+    vocab_files_names = VOCAB_FILES_NAMES
+    pretrained_vocab_files_map = PRETRAINED_VOCAB_FILES_MAP
+    max_model_input_sizes = PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES
 
-        # Instantiate tokenizer.
-        tokenizer = cls(*inputs, **kwargs)
-        vocab_dict = torch.load(resolved_vocab_file)
-        for key, value in vocab_dict.items():
-            tokenizer.__dict__[key] = value
-        return tokenizer
-
-    def __init__(self, special=[], min_freq=0, max_size=None, lower_case=False,
-                 delimiter=None, vocab_file=None, never_split=("<unk>", "<eos>", "<formula>")):
+    def __init__(self, special=None, min_freq=0, max_size=None, lower_case=False,
+                 delimiter=None, vocab_file=None, pretrained_vocab_file=None,
+                 never_split=None, unk_token="<unk>", eos_token="<eos>",
+                 additional_special_tokens=["<formula>"], **kwargs):
+        super(TransfoXLTokenizer, self).__init__(unk_token=unk_token, eos_token=eos_token,
+                                                 additional_special_tokens=additional_special_tokens,
+                                                 **kwargs)
+        if never_split is None:
+            never_split = self.all_special_tokens
+        if special is None:
+            special = []
         self.counter = Counter()
         self.special = special
         self.min_freq = min_freq
@@ -111,6 +88,13 @@ class TransfoXLTokenizer(object):
         self.delimiter = delimiter
         self.vocab_file = vocab_file
         self.never_split = never_split
+
+        if pretrained_vocab_file is not None:
+            # Hack because, honestly this tokenizer was not made to be used
+            # in a library like ours, at all.
+            vocab_dict = torch.load(pretrained_vocab_file)
+            for key, value in vocab_dict.items():
+                self.__dict__[key] = value
 
         if vocab_file is not None:
             self.build_vocab()
@@ -161,7 +145,8 @@ class TransfoXLTokenizer(object):
         """Save the tokenizer vocabulary to a directory or file."""
         index = 0
         if os.path.isdir(vocab_path):
-            vocab_file = os.path.join(vocab_path, VOCAB_NAME)
+            vocab_file = os.path.join(
+                vocab_path, VOCAB_FILES_NAMES['pretrained_vocab_file'])
         torch.save(self.__dict__, vocab_file)
         return (vocab_file,)
 
@@ -231,12 +216,14 @@ class TransfoXLTokenizer(object):
             self.idx2sym.append(sym)
             self.sym2idx[sym] = len(self.idx2sym) - 1
 
-    def get_sym(self, idx):
+    def _convert_id_to_token(self, idx):
+        """Converts an id in a token (BPE) using the vocab."""
         assert 0 <= idx < len(
             self), 'Index {} out of vocabulary range'.format(idx)
         return self.idx2sym[idx]
 
-    def get_idx(self, sym):
+    def _convert_token_to_id(self, sym):
+        """ Converts a token (str/unicode) in an id using the vocab. """
         if sym in self.sym2idx:
             return self.sym2idx[sym]
         else:
@@ -253,37 +240,19 @@ class TransfoXLTokenizer(object):
                 raise ValueError(
                     'Token not in vocabulary and no <unk> token in vocabulary for replacement')
 
-    def convert_ids_to_tokens(self, indices):
-        """Converts a sequence of indices in symbols using the vocab."""
-        return [self.get_sym(idx) for idx in indices]
-
-    def convert_tokens_to_ids(self, symbols):
-        """Converts a sequence of symbols into ids using the vocab."""
-        return [self.get_idx(sym) for sym in symbols]
+    def _convert_ids_to_string(self, tokens_ids):
+        """Converts a sequence of ids in a string."""
+        out_string = ' '.join(tokens_ids).strip()
+        return out_string
 
     def convert_to_tensor(self, symbols):
         return torch.LongTensor(self.convert_tokens_to_ids(symbols))
 
-    def encode(self, text):
-        return self.convert_tokens_to_ids(self.tokenize(text))
-
-    def decode(self, indices, exclude=None, clean_up_tokenization_spaces=True):
-        """Converts a sequence of indices in a string."""
-        if exclude is None:
-            out_string = ' '.join([self.get_sym(idx) for idx in indices])
-        else:
-            out_string = ' '.join([self.get_sym(idx)
-                                   for idx in indices if idx not in exclude])
-
-        if clean_up_tokenization_spaces:
-            out_string = clean_up_tokenization(out_string)
-
-        return out_string
-
-    def __len__(self):
+    @property
+    def vocab_size(self):
         return len(self.idx2sym)
 
-    def tokenize(self, line, add_eos=False, add_double_eos=False):
+    def _tokenize(self, line, add_eos=False, add_double_eos=False):
         line = line.strip()
         # convert to lower case
         if self.lower_case:
@@ -498,7 +467,7 @@ class TransfoXLCorpus(object):
                 "We assumed '{}' was a path or url but couldn't find files {} "
                 "at this path or url.".format(
                     pretrained_model_name_or_path,
-                    ', '.join(PRETRAINED_VOCAB_ARCHIVE_MAP.keys()),
+                    ', '.join(PRETRAINED_CORPUS_ARCHIVE_MAP.keys()),
                     pretrained_model_name_or_path,
                     corpus_file))
             return None

@@ -16,39 +16,39 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
-import shutil
 import unittest
 from io import open
 
-import pytest
-
-from transformers.tokenization_transfo_xl import (PRETRAINED_VOCAB_ARCHIVE_MAP,
+from transformers.tokenization_transfo_xl import (VOCAB_FILES_NAMES,
                                                   TransfoXLTokenizer)
 
-from.tokenization_tests_commons import create_and_check_tokenizer_commons
+from.tokenization_tests_commons import create_and_check_tokenizer_commons, TemporaryDirectory
 
 
 class TransfoXLTokenizationTest(unittest.TestCase):
 
     def test_full_tokenizer(self):
         vocab_tokens = [
-            "<unk>", "[CLS]", "[SEP]", "want", "unwanted", "wa", "un", "running", ","
+            "<unk>", "[CLS]", "[SEP]", "want", "unwanted", "wa", "un",
+            "running", ",", "low", "l",
         ]
-        with open("/tmp/transfo_xl_tokenizer_test.txt", "w", encoding='utf-8') as vocab_writer:
-            vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
-            vocab_file = vocab_writer.name
+        with TemporaryDirectory() as tmpdirname:
+            vocab_file = os.path.join(
+                tmpdirname, VOCAB_FILES_NAMES['vocab_file'])
+            with open(vocab_file, "w", encoding='utf-8') as vocab_writer:
+                vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
 
-        create_and_check_tokenizer_commons(
-            self, TransfoXLTokenizer, vocab_file=vocab_file, lower_case=True)
+            create_and_check_tokenizer_commons(
+                self, TransfoXLTokenizer, tmpdirname, lower_case=True)
 
-        tokenizer = TransfoXLTokenizer(vocab_file=vocab_file, lower_case=True)
-        os.remove(vocab_file)
+            tokenizer = TransfoXLTokenizer(
+                vocab_file=vocab_file, lower_case=True)
 
-        tokens = tokenizer.tokenize(u"<unk> UNwanted , running")
-        self.assertListEqual(tokens, ["<unk>", "unwanted", ",", "running"])
+            tokens = tokenizer.tokenize(u"<unk> UNwanted , running")
+            self.assertListEqual(tokens, ["<unk>", "unwanted", ",", "running"])
 
-        self.assertListEqual(
-            tokenizer.convert_tokens_to_ids(tokens), [0, 4, 8, 7])
+            self.assertListEqual(
+                tokenizer.convert_tokens_to_ids(tokens), [0, 4, 8, 7])
 
     def test_full_tokenizer_lower(self):
         tokenizer = TransfoXLTokenizer(lower_case=True)
@@ -63,15 +63,6 @@ class TransfoXLTokenizationTest(unittest.TestCase):
         self.assertListEqual(
             tokenizer.tokenize(u" \tHeLLo ! how  \n Are yoU ?  "),
             ["HeLLo", "!", "how", "Are", "yoU", "?"])
-
-    @pytest.mark.slow
-    def test_tokenizer_from_pretrained(self):
-        cache_dir = "/tmp/transformers_test/"
-        for model_name in list(PRETRAINED_VOCAB_ARCHIVE_MAP.keys())[:1]:
-            tokenizer = TransfoXLTokenizer.from_pretrained(
-                model_name, cache_dir=cache_dir)
-            shutil.rmtree(cache_dir)
-            self.assertIsNotNone(tokenizer)
 
 
 if __name__ == '__main__':
