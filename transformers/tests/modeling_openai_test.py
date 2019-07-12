@@ -19,8 +19,8 @@ import unittest
 import pytest
 import torch
 
-from transformers import (OpenAIGPTConfig, OpenAIGPTDoubleHeadsModel,
-                          OpenAIGPTLMHeadModel, OpenAIGPTModel)
+from pytorch_transformers import (OpenAIGPTConfig, OpenAIGPTDoubleHeadsModel,
+                                  OpenAIGPTLMHeadModel, OpenAIGPTModel)
 
 from .modeling_tests_commons import (ConfigTester, GPTModelTester,
                                      create_and_check_commons)

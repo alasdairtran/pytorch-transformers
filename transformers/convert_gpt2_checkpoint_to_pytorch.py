@@ -21,8 +21,9 @@ from io import open
 
 import torch
 
-from transformers.modeling_gpt2 import (CONFIG_NAME, WEIGHTS_NAME, GPT2Config,
-                                        GPT2Model, load_tf_weights_in_gpt2)
+from pytorch_transformers.modeling_gpt2 import (CONFIG_NAME, WEIGHTS_NAME,
+                                                GPT2Config, GPT2Model,
+                                                load_tf_weights_in_gpt2)
 
 
 def convert_gpt2_checkpoint_to_pytorch(gpt2_checkpoint_path, gpt2_config_file, pytorch_dump_folder_path):

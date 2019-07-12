@@ -19,7 +19,8 @@ import json
 import os
 import unittest
 
-from transformers.tokenization_gpt2 import VOCAB_FILES_NAMES, GPT2Tokenizer
+from pytorch_transformers.tokenization_gpt2 import (VOCAB_FILES_NAMES,
+                                                    GPT2Tokenizer)
 
 from .tokenization_tests_commons import (TemporaryDirectory,
                                          create_and_check_tokenizer_commons)

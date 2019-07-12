@@ -23,9 +23,9 @@ from io import open
 import numpy
 import torch
 
-from transformers.modeling_xlm import (CONFIG_NAME, WEIGHTS_NAME, XLMConfig,
-                                       XLMModel)
-from transformers.tokenization_xlm import VOCAB_FILES_NAMES
+from pytorch_transformers.modeling_utils import CONFIG_NAME, WEIGHTS_NAME
+from pytorch_transformers.modeling_xlm import XLMConfig, XLMModel
+from pytorch_transformers.tokenization_xlm import VOCAB_FILES_NAMES
 
 
 def convert_xlm_checkpoint_to_pytorch(xlm_checkpoint_path, pytorch_dump_folder_path):
@@ -40,7 +40,7 @@ def convert_xlm_checkpoint_to_pytorch(xlm_checkpoint_path, pytorch_dump_folder_p
 
     vocab = chkpt['dico_word2id']
     vocab = dict((s + '</w>' if s.find('@@') == -1 and i >
-                  13 else s.replace('@@', ''), i) for s, i in d.items())
+                  13 else s.replace('@@', ''), i) for s, i in vocab.items())
 
     # Save pytorch-model
     pytorch_weights_dump_path = pytorch_dump_folder_path + '/' + WEIGHTS_NAME

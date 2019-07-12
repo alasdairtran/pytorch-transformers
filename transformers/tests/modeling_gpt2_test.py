@@ -23,8 +23,8 @@ import unittest
 import pytest
 import torch
 
-from transformers import (GPT2Config, GPT2DoubleHeadsModel, GPT2LMHeadModel,
-                          GPT2Model)
+from pytorch_transformers import (GPT2Config, GPT2DoubleHeadsModel,
+                                  GPT2LMHeadModel, GPT2Model)
 
 from .modeling_tests_commons import (ConfigTester, GPTModelTester,
                                      create_and_check_commons)

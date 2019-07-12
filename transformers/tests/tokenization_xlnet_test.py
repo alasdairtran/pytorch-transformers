@@ -18,7 +18,8 @@ from __future__ import (absolute_import, division, print_function,
 import os
 import unittest
 
-from transformers.tokenization_xlnet import SPIECE_UNDERLINE, XLNetTokenizer
+from pytorch_transformers.tokenization_xlnet import (SPIECE_UNDERLINE,
+                                                     XLNetTokenizer)
 
 from .tokenization_tests_commons import (TemporaryDirectory,
                                          create_and_check_tokenizer_commons)

@@ -1,4 +1,43 @@
 XLNet
 ----------------------------------------------------
 
-I don't really know what to put here, I'll leave it up to you to decide @Thom
+``XLNetConfig``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: transformers.XLNetConfig
+    :members:
+
+
+``XLNetTokenizer``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: transformers.XLNetTokenizer
+    :members:
+
+
+``XLNetModel``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: transformers.XLNetModel
+    :members:
+
+
+``XLNetLMHeadModel``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: transformers.XLNetLMHeadModel
+    :members:
+
+
+``XLNetForSequenceClassification``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: transformers.XLNetForSequenceClassification
+    :members:
+
+
+``XLNetForQuestionAnswering``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: transformers.XLNetForQuestionAnswering
+    :members:

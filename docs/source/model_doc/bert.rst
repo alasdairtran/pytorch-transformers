@@ -4,75 +4,75 @@ BERT
 ``BertConfig``
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertConfig
+.. autoclass:: transformers.BertConfig
     :members:
 
 
 ``BertTokenizer``
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertTokenizer
+.. autoclass:: transformers.BertTokenizer
     :members:
 
 
 ``BertAdam``
 ~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertAdam
+.. autoclass:: transformers.BertAdam
     :members:
 
-1. ``BertModel``
+``BertModel``
 ~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertModel
+.. autoclass:: transformers.BertModel
     :members:
 
 
-2. ``BertForPreTraining``
+``BertForPreTraining``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertForPreTraining
+.. autoclass:: transformers.BertForPreTraining
     :members:
 
 
-3. ``BertForMaskedLM``
+``BertForMaskedLM``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertForMaskedLM
+.. autoclass:: transformers.BertForMaskedLM
     :members:
 
 
-4. ``BertForNextSentencePrediction``
+``BertForNextSentencePrediction``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertForNextSentencePrediction
+.. autoclass:: transformers.BertForNextSentencePrediction
     :members:
 
 
-5. ``BertForSequenceClassification``
+``BertForSequenceClassification``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertForSequenceClassification
+.. autoclass:: transformers.BertForSequenceClassification
     :members:
 
 
-6. ``BertForMultipleChoice``
+``BertForMultipleChoice``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertForMultipleChoice
+.. autoclass:: transformers.BertForMultipleChoice
     :members:
 
 
-7. ``BertForTokenClassification``
+``BertForTokenClassification``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertForTokenClassification
+.. autoclass:: transformers.BertForTokenClassification
     :members:
 
 
-8. ``BertForQuestionAnswering``
+``BertForQuestionAnswering``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: pytorch_pretrained_bert.BertForQuestionAnswering
+.. autoclass:: transformers.BertForQuestionAnswering
     :members:
 

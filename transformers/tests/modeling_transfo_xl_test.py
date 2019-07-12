@@ -23,8 +23,9 @@ import unittest
 import pytest
 import torch
 
-from transformers import TransfoXLConfig, TransfoXLLMHeadModel, TransfoXLModel
-from transformers.modeling_transfo_xl import \
+from pytorch_transformers import (TransfoXLConfig, TransfoXLLMHeadModel,
+                                  TransfoXLModel)
+from pytorch_transformers.modeling_transfo_xl import \
     TRANSFO_XL_PRETRAINED_MODEL_ARCHIVE_MAP
 
 from .modeling_tests_commons import (ConfigTester, create_and_check_commons,
@@ -190,7 +191,7 @@ class TransfoXLModelTest(unittest.TestCase):
 
     @pytest.mark.slow
     def test_model_from_pretrained(self):
-        cache_dir = "/tmp/transformers_test/"
+        cache_dir = "/tmp/pytorch_transformers_test/"
         for model_name in list(TRANSFO_XL_PRETRAINED_MODEL_ARCHIVE_MAP.keys())[:1]:
             model = TransfoXLModel.from_pretrained(
                 model_name, cache_dir=cache_dir)

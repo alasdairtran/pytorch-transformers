@@ -19,8 +19,8 @@ import json
 import os
 import unittest
 
-from transformers.tokenization_openai import (VOCAB_FILES_NAMES,
-                                              OpenAIGPTTokenizer)
+from pytorch_transformers.tokenization_openai import (VOCAB_FILES_NAMES,
+                                                      OpenAIGPTTokenizer)
 
 from .tokenization_tests_commons import (TemporaryDirectory,
                                          create_and_check_tokenizer_commons)
