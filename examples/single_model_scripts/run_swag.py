@@ -32,13 +32,12 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
-from pytorch_transformers.file_utils import (CONFIG_NAME,
-                                             PYTORCH_PRETRAINED_BERT_CACHE,
-                                             WEIGHTS_NAME)
-from pytorch_transformers.modeling_bert import (BertConfig,
-                                                BertForMultipleChoice)
-from pytorch_transformers.optimization import AdamW, WarmupLinearSchedule
-from pytorch_transformers.tokenization_bert import BertTokenizer
+from transformers.file_utils import (CONFIG_NAME,
+                                     PYTORCH_PRETRAINED_BERT_CACHE,
+                                     WEIGHTS_NAME)
+from transformers.modeling_bert import BertConfig, BertForMultipleChoice
+from transformers.optimization import AdamW, WarmupLinearSchedule
+from transformers.tokenization_bert import BertTokenizer
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',

@@ -1,5 +1,6 @@
-from transformers.modeling_xlnet import (XLNetConfig,  # XLNetForSequenceClassification
-                                         XLNetLMHeadModel, XLNetModel)
+from transformers.modeling_xlnet import \
+    XLNetConfig  # XLNetForSequenceClassification
+from transformers.modeling_xlnet import XLNetLMHeadModel, XLNetModel
 from transformers.tokenization_xlnet import XLNetTokenizer
 
 # A lot of models share the same param doc. Use a decorator

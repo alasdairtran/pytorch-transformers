@@ -24,11 +24,11 @@ import unittest
 
 import torch
 
-from pytorch_transformers import PretrainedConfig, PreTrainedModel
-from pytorch_transformers.modeling_bert import (BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
-                                                BertConfig, BertModel)
-from pytorch_transformers.modeling_gpt2 import (GPT2_PRETRAINED_MODEL_ARCHIVE_MAP,
-                                                GPT2Config, GPT2LMHeadModel)
+from transformers import PretrainedConfig, PreTrainedModel
+from transformers.modeling_bert import (BERT_PRETRAINED_MODEL_ARCHIVE_MAP,
+                                        BertConfig, BertModel)
+from transformers.modeling_gpt2 import (GPT2_PRETRAINED_MODEL_ARCHIVE_MAP,
+                                        GPT2Config, GPT2LMHeadModel)
 
 
 def _config_zero_init(config):
@@ -490,7 +490,7 @@ class CommonTestCases:
                 [[], []])
 
         def create_and_check_model_from_pretrained(self):
-            cache_dir = "/tmp/pytorch_transformers_test/"
+            cache_dir = "/tmp/transformers_test/"
             for model_name in list(self.base_model_class.pretrained_model_archive_map.keys())[:1]:
                 model = self.base_model_class.from_pretrained(
                     model_name, cache_dir=cache_dir)

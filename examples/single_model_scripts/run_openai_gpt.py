@@ -39,9 +39,9 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from tqdm import tqdm, trange
 
-from pytorch_transformers import (CONFIG_NAME, WEIGHTS_NAME, AdamW,
-                                  OpenAIGPTDoubleHeadsModel,
-                                  OpenAIGPTTokenizer, cached_path)
+from transformers import (CONFIG_NAME, WEIGHTS_NAME, AdamW,
+                          OpenAIGPTDoubleHeadsModel, OpenAIGPTTokenizer,
+                          cached_path)
 
 ROCSTORIES_URL = "https://s3.amazonaws.com/datasets.huggingface.co/ROCStories.tar.gz"
 

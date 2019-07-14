@@ -32,14 +32,13 @@ from torch.utils.data import (DataLoader, SequentialSampler, Subset,
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 
-from pytorch_transformers import (WEIGHTS_NAME, BertConfig,
-                                  BertForSequenceClassification, BertTokenizer,
-                                  XLMConfig, XLMForSequenceClassification,
-                                  XLMTokenizer, XLNetConfig,
-                                  XLNetForSequenceClassification,
-                                  XLNetTokenizer)
 from run_glue import (ALL_MODELS, MODEL_CLASSES, load_and_cache_examples,
                       set_seed)
+from transformers import (WEIGHTS_NAME, BertConfig,
+                          BertForSequenceClassification, BertTokenizer,
+                          XLMConfig, XLMForSequenceClassification,
+                          XLMTokenizer, XLNetConfig,
+                          XLNetForSequenceClassification, XLNetTokenizer)
 from utils_glue import (compute_metrics, convert_examples_to_features,
                         output_modes, processors)
 

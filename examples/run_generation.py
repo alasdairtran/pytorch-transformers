@@ -27,12 +27,11 @@ import torch
 import torch.nn.functional as F
 from tqdm import trange
 
-from pytorch_transformers import (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer,
-                                  OpenAIGPTConfig, OpenAIGPTLMHeadModel,
-                                  OpenAIGPTTokenizer, TransfoXLConfig,
-                                  TransfoXLLMHeadModel, TransfoXLTokenizer,
-                                  XLNetConfig, XLNetLMHeadModel,
-                                  XLNetTokenizer)
+from transformers import (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer,
+                          OpenAIGPTConfig, OpenAIGPTLMHeadModel,
+                          OpenAIGPTTokenizer, TransfoXLConfig,
+                          TransfoXLLMHeadModel, TransfoXLTokenizer,
+                          XLNetConfig, XLNetLMHeadModel, XLNetTokenizer)
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
