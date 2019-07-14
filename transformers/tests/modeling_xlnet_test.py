@@ -23,17 +23,20 @@ import unittest
 import pytest
 import torch
 
-from pytorch_transformers import (XLNetConfig, XLNetForQuestionAnswering,
-                                  XLNetForSequenceClassification,
-                                  XLNetLMHeadModel, XLNetModel)
-from pytorch_transformers.modeling_xlnet import \
-    XLNET_PRETRAINED_MODEL_ARCHIVE_MAP
+from transformers import (XLNetConfig, XLNetForQuestionAnswering,
+                          XLNetForSequenceClassification, XLNetLMHeadModel,
+                          XLNetModel)
+from transformers.modeling_xlnet import XLNET_PRETRAINED_MODEL_ARCHIVE_MAP
 
-from .modeling_tests_commons import (ConfigTester, create_and_check_commons,
-                                     ids_tensor)
+from .modeling_common_test import CommonTestCases, ConfigTester, ids_tensor
 
 
-class XLNetModelTest(unittest.TestCase):
+class XLNetModelTest(CommonTestCases.CommonModelTester):
+
+    all_model_classes = (XLNetModel, XLNetLMHeadModel,
+                         XLNetForSequenceClassification, XLNetForQuestionAnswering)
+    test_pruning = False
+
     class XLNetModelTester(object):
 
         def __init__(self,
@@ -59,8 +62,6 @@ class XLNetModelTest(unittest.TestCase):
                      initializer_range=0.05,
                      seed=1,
                      type_vocab_size=2,
-                     all_model_classes=(XLNetModel, XLNetLMHeadModel,
-                                        XLNetForSequenceClassification, XLNetForQuestionAnswering),
                      ):
             self.parent = parent
             self.batch_size = batch_size
@@ -85,7 +86,6 @@ class XLNetModelTest(unittest.TestCase):
             self.seed = seed
             self.type_vocab_size = type_vocab_size
             self.type_sequence_label_size = type_sequence_label_size
-            self.all_model_classes = all_model_classes
 
         def prepare_config_and_inputs(self):
             input_ids_1 = ids_tensor(
@@ -105,7 +105,6 @@ class XLNetModelTest(unittest.TestCase):
             target_mapping = torch.zeros(
                 self.batch_size, 1, self.seq_length + 1, dtype=torch.float)
             target_mapping[:, 0, -1] = 1.0  # predict last token
-            inp_q = target_mapping[:, 0, :].clone()  # predict last token
 
             sequence_labels = None
             lm_labels = None
@@ -134,14 +133,14 @@ class XLNetModelTest(unittest.TestCase):
                 num_labels=self.type_sequence_label_size)
 
             return (config, input_ids_1, input_ids_2, input_ids_q, perm_mask, input_mask,
-                    target_mapping, inp_q, segment_ids, lm_labels, sequence_labels, is_impossible_labels)
+                    target_mapping, segment_ids, lm_labels, sequence_labels, is_impossible_labels)
 
         def set_seed(self):
             random.seed(self.seed)
             torch.manual_seed(self.seed)
 
         def create_and_check_xlnet_base_model(self, config, input_ids_1, input_ids_2, input_ids_q, perm_mask, input_mask,
-                                              target_mapping, inp_q, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
+                                              target_mapping, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
             model = XLNetModel(config)
             model.eval()
 
@@ -163,7 +162,7 @@ class XLNetModelTest(unittest.TestCase):
                 [[self.seq_length, self.batch_size, self.hidden_size]] * self.num_hidden_layers)
 
         def create_and_check_xlnet_lm_head(self, config, input_ids_1, input_ids_2, input_ids_q, perm_mask, input_mask,
-                                           target_mapping, inp_q, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
+                                           target_mapping, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
             model = XLNetLMHeadModel(config)
             model.eval()
 
@@ -174,7 +173,7 @@ class XLNetModelTest(unittest.TestCase):
                 input_ids_2, token_type_ids=segment_ids, labels=lm_labels, mems=mems_1)
 
             logits, _ = model(input_ids_q, perm_mask=perm_mask,
-                              target_mapping=target_mapping, inp_q=inp_q)
+                              target_mapping=target_mapping)
 
             result = {
                 "loss_1": loss_1,
@@ -206,7 +205,7 @@ class XLNetModelTest(unittest.TestCase):
                 [[self.mem_len, self.batch_size, self.hidden_size]] * self.num_hidden_layers)
 
         def create_and_check_xlnet_qa(self, config, input_ids_1, input_ids_2, input_ids_q, perm_mask, input_mask,
-                                      target_mapping, inp_q, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
+                                      target_mapping, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
             model = XLNetForQuestionAnswering(config)
             model.eval()
 
@@ -256,7 +255,7 @@ class XLNetModelTest(unittest.TestCase):
                 [[self.seq_length, self.batch_size, self.hidden_size]] * self.num_hidden_layers)
 
         def create_and_check_xlnet_sequence_classif(self, config, input_ids_1, input_ids_2, input_ids_q, perm_mask, input_mask,
-                                                    target_mapping, inp_q, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
+                                                    target_mapping, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
             model = XLNetForSequenceClassification(config)
             model.eval()
 
@@ -279,48 +278,50 @@ class XLNetModelTest(unittest.TestCase):
                 list(list(mem.size()) for mem in result["mems_1"]),
                 [[self.seq_length, self.batch_size, self.hidden_size]] * self.num_hidden_layers)
 
-        def create_and_check_xlnet_commons(self, config, input_ids_1, input_ids_2, input_ids_q, perm_mask, input_mask,
-                                           target_mapping, inp_q, segment_ids, lm_labels, sequence_labels, is_impossible_labels):
+        def prepare_config_and_inputs_for_common(self):
+            config_and_inputs = self.prepare_config_and_inputs()
+            (config, input_ids_1, input_ids_2, input_ids_q, perm_mask, input_mask,
+                target_mapping, segment_ids, lm_labels,
+                sequence_labels, is_impossible_labels) = config_and_inputs
             inputs_dict = {'input_ids': input_ids_1}
-            create_and_check_commons(
-                self, config, inputs_dict, test_pruning=False)
+            return config, inputs_dict
 
-    def test_default(self):
-        self.run_tester(XLNetModelTest.XLNetModelTester(self))
+    def setUp(self):
+        self.model_tester = XLNetModelTest.XLNetModelTester(self)
+        self.config_tester = ConfigTester(
+            self, config_class=XLNetConfig, d_inner=37)
 
     def test_config(self):
-        config_tester = ConfigTester(
-            self, config_class=XLNetConfig, d_inner=37)
-        config_tester.run_common_tests()
+        self.config_tester.run_common_tests()
+
+    def test_xlnet_base_model(self):
+        self.model_tester.set_seed()
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_xlnet_base_model(*config_and_inputs)
+
+    def test_xlnet_lm_head(self):
+        self.model_tester.set_seed()
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_xlnet_lm_head(*config_and_inputs)
+
+    def test_xlnet_sequence_classif(self):
+        self.model_tester.set_seed()
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_xlnet_sequence_classif(
+            *config_and_inputs)
+
+    def test_xlnet_qa(self):
+        self.model_tester.set_seed()
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_xlnet_qa(*config_and_inputs)
 
     @pytest.mark.slow
     def test_model_from_pretrained(self):
-        cache_dir = "/tmp/pytorch_transformers_test/"
+        cache_dir = "/tmp/transformers_test/"
         for model_name in list(XLNET_PRETRAINED_MODEL_ARCHIVE_MAP.keys())[:1]:
             model = XLNetModel.from_pretrained(model_name, cache_dir=cache_dir)
             shutil.rmtree(cache_dir)
             self.assertIsNotNone(model)
-
-    def run_tester(self, tester):
-        tester.set_seed()
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_xlnet_base_model(*config_and_inputs)
-
-        tester.set_seed()
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_xlnet_lm_head(*config_and_inputs)
-
-        tester.set_seed()
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_xlnet_sequence_classif(*config_and_inputs)
-
-        tester.set_seed()
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_xlnet_qa(*config_and_inputs)
-
-        tester.set_seed()
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_xlnet_commons(*config_and_inputs)
 
 
 if __name__ == "__main__":

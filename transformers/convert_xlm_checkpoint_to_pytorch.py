@@ -23,9 +23,9 @@ from io import open
 import numpy
 import torch
 
-from pytorch_transformers.modeling_utils import CONFIG_NAME, WEIGHTS_NAME
-from pytorch_transformers.modeling_xlm import XLMConfig, XLMModel
-from pytorch_transformers.tokenization_xlm import VOCAB_FILES_NAMES
+from transformers.modeling_utils import CONFIG_NAME, WEIGHTS_NAME
+from transformers.modeling_xlm import XLMConfig, XLMModel
+from transformers.tokenization_xlm import VOCAB_FILES_NAMES
 
 
 def convert_xlm_checkpoint_to_pytorch(xlm_checkpoint_path, pytorch_dump_folder_path):

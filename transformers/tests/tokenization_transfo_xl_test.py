@@ -19,8 +19,8 @@ import os
 import unittest
 from io import open
 
-from pytorch_transformers.tokenization_transfo_xl import (VOCAB_FILES_NAMES,
-                                                          TransfoXLTokenizer)
+from transformers.tokenization_transfo_xl import (VOCAB_FILES_NAMES,
+                                                  TransfoXLTokenizer)
 
 from.tokenization_tests_commons import create_and_check_tokenizer_commons, TemporaryDirectory
 

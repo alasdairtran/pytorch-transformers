@@ -21,12 +21,12 @@ import os
 
 import torch
 
-from pytorch_transformers.modeling_xlnet import (CONFIG_NAME, WEIGHTS_NAME,
-                                                 XLNetConfig,
-                                                 XLNetForQuestionAnswering,
-                                                 XLNetForSequenceClassification,
-                                                 XLNetLMHeadModel,
-                                                 load_tf_weights_in_xlnet)
+from transformers.modeling_xlnet import (CONFIG_NAME, WEIGHTS_NAME,
+                                         XLNetConfig,
+                                         XLNetForQuestionAnswering,
+                                         XLNetForSequenceClassification,
+                                         XLNetLMHeadModel,
+                                         load_tf_weights_in_xlnet)
 
 GLUE_TASKS_NUM_LABELS = {
     "cola": 2,

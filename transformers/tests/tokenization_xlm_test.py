@@ -19,8 +19,7 @@ import json
 import os
 import unittest
 
-from pytorch_transformers.tokenization_xlm import (VOCAB_FILES_NAMES,
-                                                   XLMTokenizer)
+from transformers.tokenization_xlm import VOCAB_FILES_NAMES, XLMTokenizer
 
 from .tokenization_tests_commons import (TemporaryDirectory,
                                          create_and_check_tokenizer_commons)

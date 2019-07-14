@@ -19,13 +19,10 @@ import os
 import unittest
 from io import open
 
-from pytorch_transformers.tokenization_bert import (VOCAB_FILES_NAMES,
-                                                    BasicTokenizer,
-                                                    BertTokenizer,
-                                                    WordpieceTokenizer,
-                                                    _is_control,
-                                                    _is_punctuation,
-                                                    _is_whitespace)
+from transformers.tokenization_bert import (VOCAB_FILES_NAMES, BasicTokenizer,
+                                            BertTokenizer, WordpieceTokenizer,
+                                            _is_control, _is_punctuation,
+                                            _is_whitespace)
 
 from .tokenization_tests_commons import (TemporaryDirectory,
                                          create_and_check_tokenizer_commons)

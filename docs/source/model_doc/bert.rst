@@ -15,10 +15,10 @@ BERT
     :members:
 
 
-``BertAdam``
+``AdamW``
 ~~~~~~~~~~~~~~~~
 
-.. autoclass:: transformers.BertAdam
+.. autoclass:: transformers.AdamW
     :members:
 
 ``BertModel``

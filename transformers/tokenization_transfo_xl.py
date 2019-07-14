@@ -23,7 +23,6 @@ import glob
 import logging
 import os
 import sys
-import unicodedata
 from collections import Counter, OrderedDict
 from io import open
 

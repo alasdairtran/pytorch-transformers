@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""BERT finetuning runner."""
+""" Finetuning the library models for sequence classification on GLUE (Bert, XLM, XLNet)."""
 
 from __future__ import absolute_import, division, print_function
 
@@ -191,6 +191,9 @@ def train(args, train_dataset, model, tokenizer):
             train_iterator.close()
             break
 
+    if args.local_rank in [-1, 0]:
+        tb_writer.close()
+
     return global_step, tr_loss / global_step
 
 
@@ -275,7 +278,7 @@ def load_and_cache_examples(args, task, tokenizer, evaluate=False):
         list(filter(None, args.model_name.split('/'))).pop(),
         str(args.max_seq_length),
         str(task)))
-    if os.path.exists(cached_features_file) and not args.overwrite_cache:
+    if os.path.exists(cached_features_file):
         logger.info("Loading features from cached file %s",
                     cached_features_file)
         features = torch.load(cached_features_file)
@@ -353,9 +356,9 @@ def main():
                         help="Set this flag if you are using an uncased model.")
 
     parser.add_argument("--per_gpu_train_batch_size", default=8, type=int,
-                        help="Batch size per GPU for training.")
+                        help="Batch size per GPU/CPU for training.")
     parser.add_argument("--per_gpu_eval_batch_size", default=8, type=int,
-                        help="Batch size per GPU for evaluation.")
+                        help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
     parser.add_argument("--learning_rate", default=5e-5, type=float,
@@ -464,9 +467,10 @@ def main():
         '.ckpt' in args.model_name), config=config)
 
     if args.local_rank == 0:
+        # Make sure only the first process in distributed training will download model & vocab
         torch.distributed.barrier()
 
-    # Distributed and parrallel training
+    # Distributed and parallel training
     model.to(args.device)
     if args.local_rank != -1:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank],
@@ -518,7 +522,8 @@ def main():
                 logging.WARN)  # Reduce logging
         logger.info("Evaluate the following checkpoints: %s", checkpoints)
         for checkpoint in checkpoints:
-            global_step = checkpoint.split('-')[-1]
+            global_step = checkpoint.split(
+                '-')[-1] if len(checkpoints) > 1 else ""
             model = model_class.from_pretrained(checkpoint)
             model.to(args.device)
             result = evaluate(args, model, tokenizer, prefix=global_step)

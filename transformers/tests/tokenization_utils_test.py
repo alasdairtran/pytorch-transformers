@@ -18,8 +18,8 @@ import unittest
 
 import six
 
-from pytorch_transformers import PreTrainedTokenizer
-from pytorch_transformers.tokenization_gpt2 import GPT2Tokenizer
+from transformers import PreTrainedTokenizer
+from transformers.tokenization_gpt2 import GPT2Tokenizer
 
 
 class TokenizerUtilsTest(unittest.TestCase):

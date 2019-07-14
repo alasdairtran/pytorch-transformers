@@ -39,9 +39,9 @@ from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from tqdm import tqdm, trange
 
-from transformers import (CONFIG_NAME, WEIGHTS_NAME, OpenAIAdam,
-                          OpenAIGPTDoubleHeadsModel, OpenAIGPTTokenizer,
-                          cached_path)
+from pytorch_transformers import (CONFIG_NAME, WEIGHTS_NAME, AdamW,
+                                  OpenAIGPTDoubleHeadsModel,
+                                  OpenAIGPTTokenizer, cached_path)
 
 ROCSTORIES_URL = "https://s3.amazonaws.com/datasets.huggingface.co/ROCStories.tar.gz"
 
@@ -217,12 +217,12 @@ def main():
         ]
         num_train_optimization_steps = len(
             train_dataloader) * args.num_train_epochs
-        optimizer = OpenAIAdam(optimizer_grouped_parameters,
-                               lr=args.learning_rate,
-                               warmup=args.warmup_proportion,
-                               max_grad_norm=args.max_grad_norm,
-                               weight_decay=args.weight_decay,
-                               t_total=num_train_optimization_steps)
+        optimizer = AdamW(optimizer_grouped_parameters,
+                          lr=args.learning_rate,
+                          warmup=args.warmup_proportion,
+                          max_grad_norm=args.max_grad_norm,
+                          weight_decay=args.weight_decay,
+                          t_total=num_train_optimization_steps)
 
     if args.do_train:
         nb_tr_steps, tr_loss, exp_average_loss = 0, 0, None

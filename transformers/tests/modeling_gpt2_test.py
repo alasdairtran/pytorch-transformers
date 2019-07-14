@@ -14,20 +14,14 @@
 # limitations under the License.
 from __future__ import absolute_import, division, print_function
 
-import json
-import os
-import random
-import shutil
 import unittest
 
 import pytest
-import torch
 
-from pytorch_transformers import (GPT2Config, GPT2DoubleHeadsModel,
-                                  GPT2LMHeadModel, GPT2Model)
+from transformers import (GPT2Config, GPT2DoubleHeadsModel, GPT2LMHeadModel,
+                          GPT2Model)
 
-from .modeling_tests_commons import (ConfigTester, GPTModelTester,
-                                     create_and_check_commons)
+from .modeling_common_test import CommonTestCases, ConfigTester
 
 
 class GPT2ModelTest(unittest.TestCase):
@@ -37,16 +31,16 @@ class GPT2ModelTest(unittest.TestCase):
         config_tester.run_common_tests()
 
     def test_model(self):
-        model_tester = GPTModelTester(self, config_class=GPT2Config, base_model_class=GPT2Model,
-                                      lm_head_model_class=GPT2LMHeadModel,
-                                      double_head_model_class=GPT2DoubleHeadsModel)
+        model_tester = CommonTestCases.GPTModelTester(self, config_class=GPT2Config, base_model_class=GPT2Model,
+                                                      lm_head_model_class=GPT2LMHeadModel,
+                                                      double_head_model_class=GPT2DoubleHeadsModel)
         model_tester.run_common_tests(test_presents=True)
 
     @pytest.mark.slow
     def test_pretrained(self):
-        model_tester = GPTModelTester(self, config_class=GPT2Config, base_model_class=GPT2Model,
-                                      lm_head_model_class=GPT2LMHeadModel,
-                                      double_head_model_class=GPT2DoubleHeadsModel)
+        model_tester = CommonTestCases.GPTModelTester(self, config_class=GPT2Config, base_model_class=GPT2Model,
+                                                      lm_head_model_class=GPT2LMHeadModel,
+                                                      double_head_model_class=GPT2DoubleHeadsModel)
         model_tester.run_slow_tests()
 
 

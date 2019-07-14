@@ -19,20 +19,22 @@ import unittest
 
 import pytest
 
-from pytorch_transformers import (BertConfig, BertForMaskedLM,
-                                  BertForMultipleChoice,
-                                  BertForNextSentencePrediction,
-                                  BertForPreTraining, BertForQuestionAnswering,
-                                  BertForSequenceClassification,
-                                  BertForTokenClassification, BertModel)
-from pytorch_transformers.modeling_bert import \
-    BERT_PRETRAINED_MODEL_ARCHIVE_MAP
+from transformers import (BertConfig, BertForMaskedLM, BertForMultipleChoice,
+                          BertForNextSentencePrediction, BertForPreTraining,
+                          BertForQuestionAnswering,
+                          BertForSequenceClassification,
+                          BertForTokenClassification, BertModel)
+from transformers.modeling_bert import BERT_PRETRAINED_MODEL_ARCHIVE_MAP
 
-from .modeling_tests_commons import (ConfigTester, create_and_check_commons,
-                                     ids_tensor)
+from .modeling_common_test import CommonTestCases, ConfigTester, ids_tensor
 
 
-class BertModelTest(unittest.TestCase):
+class BertModelTest(CommonTestCases.CommonModelTester):
+
+    all_model_classes = (BertModel, BertForMaskedLM, BertForNextSentencePrediction,
+                         BertForPreTraining, BertForQuestionAnswering, BertForSequenceClassification,
+                         BertForTokenClassification)
+
     class BertModelTester(object):
 
         def __init__(self,
@@ -58,9 +60,6 @@ class BertModelTest(unittest.TestCase):
                      num_labels=3,
                      num_choices=4,
                      scope=None,
-                     all_model_classes=(BertModel, BertForMaskedLM, BertForNextSentencePrediction,
-                                        BertForPreTraining, BertForQuestionAnswering, BertForSequenceClassification,
-                                        BertForTokenClassification),
                      ):
             self.parent = parent
             self.batch_size = batch_size
@@ -84,7 +83,6 @@ class BertModelTest(unittest.TestCase):
             self.num_labels = num_labels
             self.num_choices = num_choices
             self.scope = scope
-            self.all_model_classes = all_model_classes
 
         def prepare_config_and_inputs(self):
             input_ids = ids_tensor(
@@ -265,57 +263,68 @@ class BertModelTest(unittest.TestCase):
                 [self.batch_size, self.num_choices])
             self.check_loss_output(result)
 
-        def create_and_check_bert_commons(self, config, input_ids, token_type_ids, input_mask, sequence_labels, token_labels, choice_labels):
+        def prepare_config_and_inputs_for_common(self):
+            config_and_inputs = self.prepare_config_and_inputs()
+            (config, input_ids, token_type_ids, input_mask,
+             sequence_labels, token_labels, choice_labels) = config_and_inputs
             inputs_dict = {'input_ids': input_ids,
                            'token_type_ids': token_type_ids, 'attention_mask': input_mask}
-            create_and_check_commons(self, config, inputs_dict)
+            return config, inputs_dict
 
-    def test_default(self):
-        self.run_tester(BertModelTest.BertModelTester(self))
+    def setUp(self):
+        self.model_tester = BertModelTest.BertModelTester(self)
+        self.config_tester = ConfigTester(
+            self, config_class=BertConfig, hidden_size=37)
 
     def test_config(self):
-        config_tester = ConfigTester(
-            self, config_class=BertConfig, hidden_size=37)
-        config_tester.run_common_tests()
+        self.config_tester.run_common_tests()
+
+    def test_bert_model(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_bert_model(*config_and_inputs)
+
+    def test_for_masked_lm(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_bert_for_masked_lm(
+            *config_and_inputs)
+
+    def test_for_multiple_choice(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_bert_for_multiple_choice(
+            *config_and_inputs)
+
+    def test_for_next_sequence_prediction(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_bert_for_next_sequence_prediction(
+            *config_and_inputs)
+
+    def test_for_pretraining(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_bert_for_pretraining(
+            *config_and_inputs)
+
+    def test_for_question_answering(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_bert_for_question_answering(
+            *config_and_inputs)
+
+    def test_for_sequence_classification(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_bert_for_sequence_classification(
+            *config_and_inputs)
+
+    def test_for_token_classification(self):
+        config_and_inputs = self.model_tester.prepare_config_and_inputs()
+        self.model_tester.create_and_check_bert_for_token_classification(
+            *config_and_inputs)
 
     @pytest.mark.slow
     def test_model_from_pretrained(self):
-        cache_dir = "/tmp/pytorch_transformers_test/"
+        cache_dir = "/tmp/transformers_test/"
         for model_name in list(BERT_PRETRAINED_MODEL_ARCHIVE_MAP.keys())[:1]:
             model = BertModel.from_pretrained(model_name, cache_dir=cache_dir)
             shutil.rmtree(cache_dir)
             self.assertIsNotNone(model)
-
-    def run_tester(self, tester):
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_model(*config_and_inputs)
-
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_for_masked_lm(*config_and_inputs)
-
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_for_multiple_choice(*config_and_inputs)
-
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_for_next_sequence_prediction(
-            *config_and_inputs)
-
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_for_pretraining(*config_and_inputs)
-
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_for_question_answering(*config_and_inputs)
-
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_for_sequence_classification(
-            *config_and_inputs)
-
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_for_token_classification(
-            *config_and_inputs)
-
-        config_and_inputs = tester.prepare_config_and_inputs()
-        tester.create_and_check_bert_commons(*config_and_inputs)
 
 
 if __name__ == "__main__":

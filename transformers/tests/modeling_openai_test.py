@@ -17,13 +17,11 @@ from __future__ import absolute_import, division, print_function
 import unittest
 
 import pytest
-import torch
 
-from pytorch_transformers import (OpenAIGPTConfig, OpenAIGPTDoubleHeadsModel,
-                                  OpenAIGPTLMHeadModel, OpenAIGPTModel)
+from transformers import (OpenAIGPTConfig, OpenAIGPTDoubleHeadsModel,
+                          OpenAIGPTLMHeadModel, OpenAIGPTModel)
 
-from .modeling_tests_commons import (ConfigTester, GPTModelTester,
-                                     create_and_check_commons)
+from .modeling_common_test import CommonTestCases, ConfigTester
 
 
 class OpenAIModelTest(unittest.TestCase):
@@ -34,16 +32,16 @@ class OpenAIModelTest(unittest.TestCase):
         config_tester.run_common_tests()
 
     def test_model(self):
-        model_tester = GPTModelTester(self, config_class=OpenAIGPTConfig, base_model_class=OpenAIGPTModel,
-                                      lm_head_model_class=OpenAIGPTLMHeadModel,
-                                      double_head_model_class=OpenAIGPTDoubleHeadsModel)
+        model_tester = CommonTestCases.GPTModelTester(self, config_class=OpenAIGPTConfig, base_model_class=OpenAIGPTModel,
+                                                      lm_head_model_class=OpenAIGPTLMHeadModel,
+                                                      double_head_model_class=OpenAIGPTDoubleHeadsModel)
         model_tester.run_common_tests(test_presents=False)
 
     @pytest.mark.slow
     def test_pretrained(self):
-        model_tester = GPTModelTester(self, config_class=OpenAIGPTConfig, base_model_class=OpenAIGPTModel,
-                                      lm_head_model_class=OpenAIGPTLMHeadModel,
-                                      double_head_model_class=OpenAIGPTDoubleHeadsModel)
+        model_tester = CommonTestCases.GPTModelTester(self, config_class=OpenAIGPTConfig, base_model_class=OpenAIGPTModel,
+                                                      lm_head_model_class=OpenAIGPTLMHeadModel,
+                                                      double_head_model_class=OpenAIGPTDoubleHeadsModel)
         model_tester.run_slow_tests()
 
 

@@ -15,13 +15,6 @@ OpenAI GPT
     :members:
 
 
-``OpenAIAdam``
-~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: transformers.OpenAIAdam
-    :members:
-
-
 ``OpenAIGPTModel``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

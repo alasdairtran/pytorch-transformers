@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from transformers import CONFIG_NAME, WEIGHTS_NAME
 from transformers.modeling_bert import BertForPreTraining
-from transformers.optimization import BertAdam, WarmupLinearSchedule
+from transformers.optimization import AdamW, WarmupLinearSchedule
 from transformers.tokenization_bert import BertTokenizer
 
 InputFeatures = namedtuple(
@@ -284,10 +284,10 @@ def main():
         warmup_linear = WarmupLinearSchedule(warmup=args.warmup_proportion,
                                              t_total=num_train_optimization_steps)
     else:
-        optimizer = BertAdam(optimizer_grouped_parameters,
-                             lr=args.learning_rate,
-                             warmup=args.warmup_proportion,
-                             t_total=num_train_optimization_steps)
+        optimizer = AdamW(optimizer_grouped_parameters,
+                          lr=args.learning_rate,
+                          warmup=args.warmup_proportion,
+                          t_total=num_train_optimization_steps)
 
     global_step = 0
     logging.info("***** Running training *****")

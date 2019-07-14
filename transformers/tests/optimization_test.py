@@ -19,10 +19,10 @@ import unittest
 import numpy as np
 import torch
 
-from pytorch_transformers import (AdamW, ConstantLRSchedule,
-                                  WarmupConstantSchedule, WarmupCosineSchedule,
-                                  WarmupCosineWithHardRestartsSchedule,
-                                  WarmupLinearSchedule)
+from transformers import (AdamW, ConstantLRSchedule, WarmupConstantSchedule,
+                          WarmupCosineSchedule,
+                          WarmupCosineWithHardRestartsSchedule,
+                          WarmupLinearSchedule)
 
 
 def unwrap_schedule(scheduler, num_steps=10):

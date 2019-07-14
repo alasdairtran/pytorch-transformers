@@ -218,9 +218,6 @@ class XLNetConfig(PretrainedConfig):
             layers in the embeddings, encoder, and pooler.
         dropatt: The dropout ratio for the attention
             probabilities.
-        max_position_embeddings: The maximum sequence length that this model might
-            ever be used with. Typically set this to something large just in case
-            (e.g., 512 or 1024 or 2048).
         initializer_range: The sttdev of the truncated_normal_initializer for
             initializing all weight matrices.
         layer_norm_eps: The epsilon used by LayerNorm.
@@ -254,7 +251,6 @@ class XLNetConfig(PretrainedConfig):
                  untie_r=True,
                  attn_type="bi",
 
-                 max_position_embeddings=512,
                  initializer_range=0.02,
                  layer_norm_eps=1e-12,
 
@@ -296,7 +292,6 @@ class XLNetConfig(PretrainedConfig):
             self.untie_r = untie_r
             self.attn_type = attn_type
 
-            self.max_position_embeddings = max_position_embeddings
             self.initializer_range = initializer_range
             self.layer_norm_eps = layer_norm_eps
 
@@ -318,6 +313,18 @@ class XLNetConfig(PretrainedConfig):
         else:
             raise ValueError("First argument must be either a vocabulary size (int)"
                              "or the path to a pretrained model config file (str)")
+
+    @property
+    def max_position_embeddings(self):
+        return -1
+
+    @property
+    def vocab_size(self):
+        return self.n_token
+
+    @vocab_size.setter
+    def vocab_size(self, value):
+        self.n_token = value
 
     @property
     def hidden_size(self):
@@ -683,9 +690,13 @@ class XLNetModel(XLNetPreTrainedModel):
 
         self.apply(self.init_weights)
 
+    def _resize_token_embeddings(self, new_num_tokens):
+        self.word_embedding = self._get_resized_embeddings(
+            self.word_embedding, new_num_tokens)
+        return self.word_embedding
+
     def _prune_heads(self, heads_to_prune):
-        logger.info("Head pruning is not implemented for XLNet")
-        pass
+        raise NotImplementedError
 
     def create_mask(self, qlen, mlen):
         """
@@ -790,7 +801,7 @@ class XLNetModel(XLNetPreTrainedModel):
         return pos_emb
 
     def forward(self, input_ids, token_type_ids=None, input_mask=None, attention_mask=None,
-                mems=None, perm_mask=None, target_mapping=None, inp_q=None, head_mask=None):
+                mems=None, perm_mask=None, target_mapping=None, head_mask=None):
         """
         Performs a model forward pass. **Can be called by calling the class directly, once it has been instantiated.**
 
@@ -814,10 +825,6 @@ class XLNetModel(XLNetPreTrainedModel):
                 If target_mapping[k, i, j] = 1, the i-th predict in batch k is
                 on the j-th token.
                 Only used during pretraining for partial prediction.
-                Set to None during finetuning.
-            inp_q: [optional] float32 Tensor in shape [bsz, len].
-                1 for tokens with losses and 0 for tokens without losses.
-                Only used during pretraining for two-stream attention.
                 Set to None during finetuning.
             head_mask: TODO Lysandre didn't fill
 
@@ -853,8 +860,6 @@ class XLNetModel(XLNetPreTrainedModel):
             1, 2, 0).contiguous() if perm_mask is not None else None
         target_mapping = target_mapping.permute(
             1, 2, 0).contiguous() if target_mapping is not None else None
-        inp_q = inp_q.transpose(
-            0, 1).contiguous() if inp_q is not None else None
 
         qlen, bsz = input_ids.shape[0], input_ids.shape[1]
         mlen = mems[0].shape[0] if mems is not None else 0
@@ -913,14 +918,11 @@ class XLNetModel(XLNetPreTrainedModel):
         # Word embeddings and prepare h & g hidden states
         word_emb_k = self.word_embedding(input_ids)
         output_h = self.dropout(word_emb_k)
-        if inp_q is not None:
-            if target_mapping is not None:
-                word_emb_q = self.mask_emb.expand(
-                    target_mapping.shape[0], bsz, -1)
-            else:
-                inp_q_ext = inp_q[:, :, None]
-                word_emb_q = inp_q_ext * self.mask_emb + \
-                    (1 - inp_q_ext) * word_emb_k
+        if target_mapping is not None:
+            word_emb_q = self.mask_emb.expand(target_mapping.shape[0], bsz, -1)
+        # else:  # We removed the inp_q input which was same as target mapping
+        #     inp_q_ext = inp_q[:, :, None]
+        #     word_emb_q = inp_q_ext * self.mask_emb + (1 - inp_q_ext) * word_emb_k
             output_g = self.dropout(word_emb_q)
         else:
             output_g = None
@@ -1026,12 +1028,9 @@ class XLNetLMHeadModel(XLNetPreTrainedModel):
         super(XLNetLMHeadModel, self).__init__(config)
         self.attn_type = config.attn_type
         self.same_length = config.same_length
-        self.torchscript = config.torchscript
 
         self.transformer = XLNetModel(config)
         self.lm_loss = nn.Linear(config.d_model, config.n_token, bias=True)
-
-        # Tie weights
 
         self.apply(self.init_weights)
         self.tie_weights()
@@ -1039,14 +1038,11 @@ class XLNetLMHeadModel(XLNetPreTrainedModel):
     def tie_weights(self):
         """ Make sure we are sharing the embeddings
         """
-        if self.torchscript:
-            self.lm_loss.weight = nn.Parameter(
-                self.transformer.word_embedding.weight.clone())
-        else:
-            self.lm_loss.weight = self.transformer.word_embedding.weight
+        self._tie_or_clone_weights(
+            self.lm_loss, self.transformer.word_embedding)
 
     def forward(self, input_ids, token_type_ids=None, input_mask=None, attention_mask=None,
-                mems=None, perm_mask=None, target_mapping=None, inp_q=None,
+                mems=None, perm_mask=None, target_mapping=None,
                 labels=None, head_mask=None):
         """
          all_encoder_layers, pooled_output = model(input_ids, token_type_ids, input_mask)
@@ -1072,11 +1068,6 @@ class XLNetLMHeadModel(XLNetPreTrainedModel):
                 on the j-th token.
                 Only used during pretraining for partial prediction.
                 Set to None during finetuning.
-            inp_q: [optional] float32 Tensor in shape [bsz, len].
-                1 for tokens with losses and 0 for tokens without losses.
-                Only used during pretraining for two-stream attention.
-                Set to None during finetuning.
-
 
         Returns:
             A ``tuple(encoded_layers, pooled_output)``, with
@@ -1106,7 +1097,7 @@ class XLNetLMHeadModel(XLNetPreTrainedModel):
             all_encoder_layers, pooled_output = model.forward(input_ids, token_type_ids, input_mask)
         """
         transformer_outputs = self.transformer(input_ids, token_type_ids, input_mask, attention_mask,
-                                               mems, perm_mask, target_mapping, inp_q, head_mask)
+                                               mems, perm_mask, target_mapping, head_mask)
 
         logits = self.lm_loss(transformer_outputs[0])
 
@@ -1158,7 +1149,7 @@ class XLNetForSequenceClassification(XLNetPreTrainedModel):
         self.apply(self.init_weights)
 
     def forward(self, input_ids, token_type_ids=None, input_mask=None, attention_mask=None,
-                mems=None, perm_mask=None, target_mapping=None, inp_q=None,
+                mems=None, perm_mask=None, target_mapping=None,
                 labels=None, head_mask=None):
         """
         Performs a model forward pass. **Can be called by calling the class directly, once it has been instantiated.**
@@ -1183,10 +1174,6 @@ class XLNetForSequenceClassification(XLNetPreTrainedModel):
                 If target_mapping[k, i, j] = 1, the i-th predict in batch k is
                 on the j-th token.
                 Only used during pre-training for partial prediction.
-                Set to None during fine-tuning.
-            inp_q: float32 Tensor in shape [bsz, len].
-                1 for tokens with losses and 0 for tokens without losses.
-                Only used during pre-training for two-stream attention.
                 Set to None during fine-tuning.
             labels: TODO Lysandre didn't fill
             head_mask: an optional ``torch.Tensor`` of shape [num_heads] or [num_layers, num_heads] with indices between 0 and 1.
@@ -1216,7 +1203,7 @@ class XLNetForSequenceClassification(XLNetPreTrainedModel):
             all_encoder_layers, pooled_output = model.forward(input_ids, token_type_ids, input_mask)
         """
         transformer_outputs = self.transformer(input_ids, token_type_ids, input_mask, attention_mask,
-                                               mems, perm_mask, target_mapping, inp_q, head_mask)
+                                               mems, perm_mask, target_mapping, head_mask)
         output = transformer_outputs[0]
 
         output = self.sequence_summary(output)
@@ -1274,7 +1261,7 @@ class XLNetForQuestionAnswering(XLNetPreTrainedModel):
         self.apply(self.init_weights)
 
     def forward(self, input_ids, token_type_ids=None, input_mask=None, attention_mask=None,
-                mems=None, perm_mask=None, target_mapping=None, inp_q=None,
+                mems=None, perm_mask=None, target_mapping=None,
                 start_positions=None, end_positions=None, cls_index=None, is_impossible=None, p_mask=None,
                 head_mask=None):
         """
@@ -1324,7 +1311,7 @@ class XLNetForQuestionAnswering(XLNetPreTrainedModel):
             start_logits, end_logits = model.forward(input_ids, token_type_ids, input_mask)
         """
         transformer_outputs = self.transformer(input_ids, token_type_ids, input_mask, attention_mask,
-                                               mems, perm_mask, target_mapping, inp_q, head_mask)
+                                               mems, perm_mask, target_mapping, head_mask)
         hidden_states = transformer_outputs[0]
         start_logits = self.start_logits(hidden_states, p_mask)
 
