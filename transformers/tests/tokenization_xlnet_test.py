@@ -35,8 +35,11 @@ class XLNetTokenizationTest(unittest.TestCase):
         with TemporaryDirectory() as tmpdirname:
             tokenizer.save_pretrained(tmpdirname)
 
+            input_text = u"This is a test"
+            output_text = u"This is a test"
+
             create_and_check_tokenizer_commons(
-                self, XLNetTokenizer, tmpdirname)
+                self, input_text, output_text, XLNetTokenizer, tmpdirname)
 
             tokens = tokenizer.tokenize(u'This is a test')
             self.assertListEqual(

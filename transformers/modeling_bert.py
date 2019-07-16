@@ -156,6 +156,7 @@ class BertConfig(PretrainedConfig):
         :class:`~transformers.BertConfig` is the configuration class to store the configuration of a
         `BertModel`.
 
+
         Arguments:
             vocab_size_or_config_json_file: Vocabulary size of `inputs_ids` in `BertModel`.
             hidden_size: Size of the encoder layers and the pooler layer.
@@ -195,31 +196,6 @@ class BertConfig(PretrainedConfig):
                  initializer_range=0.02,
                  layer_norm_eps=1e-12,
                  **kwargs):
-        """Constructs BertConfig.
-
-        Arguments:
-            vocab_size_or_config_json_file: Vocabulary size of `inputs_ids` in `BertModel`.
-            hidden_size: Size of the encoder layers and the pooler layer.
-            num_hidden_layers: Number of hidden layers in the Transformer encoder.
-            num_attention_heads: Number of attention heads for each attention layer in
-                the Transformer encoder.
-            intermediate_size: The size of the "intermediate" (i.e., feed-forward)
-                layer in the Transformer encoder.
-            hidden_act: The non-linear activation function (function or string) in the
-                encoder and pooler. If string, "gelu", "relu" and "swish" are supported.
-            hidden_dropout_prob: The dropout probabilitiy for all fully connected
-                layers in the embeddings, encoder, and pooler.
-            attention_probs_dropout_prob: The dropout ratio for the attention
-                probabilities.
-            max_position_embeddings: The maximum sequence length that this model might
-                ever be used with. Typically set this to something large just in case
-                (e.g., 512 or 1024 or 2048).
-            type_vocab_size: The vocabulary size of the `token_type_ids` passed into
-                `BertModel`.
-            initializer_range: The sttdev of the truncated_normal_initializer for
-                initializing all weight matrices.
-            layer_norm_eps: The epsilon used by LayerNorm.
-        """
         super(BertConfig, self).__init__(**kwargs)
         if isinstance(vocab_size_or_config_json_file, str) or (sys.version_info[0] == 2
                                                                and isinstance(vocab_size_or_config_json_file, unicode)):
@@ -286,11 +262,12 @@ class BertEmbeddings(nn.Module):
             config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-    def forward(self, input_ids, token_type_ids=None):
+    def forward(self, input_ids, token_type_ids=None, position_ids=None):
         seq_length = input_ids.size(1)
-        position_ids = torch.arange(
-            seq_length, dtype=torch.long, device=input_ids.device)
-        position_ids = position_ids.unsqueeze(0).expand_as(input_ids)
+        if position_ids is None:
+            position_ids = torch.arange(
+                seq_length, dtype=torch.long, device=input_ids.device)
+            position_ids = position_ids.unsqueeze(0).expand_as(input_ids)
         if token_type_ids is None:
             token_type_ids = torch.zeros_like(input_ids)
 
@@ -652,6 +629,9 @@ BERT_INPUTS_DOCSTRING = r"""
             Indices can be obtained using :class:`transformers.BertTokenizer`.
             See :func:`transformers.PreTrainedTokenizer.encode` and
             :func:`transformers.PreTrainedTokenizer.convert_tokens_to_ids` for details.
+        **position_ids**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size, sequence_length)``:
+            Indices of positions of each input sequence tokens in the position embeddings.
+            Selected in the range ``[0, config.max_position_embeddings - 1[``.
         **token_type_ids**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size, sequence_length)``:
             Segment token indices to indicate first and second portions of the inputs.
             Indices are selected in ``[0, 1]``: ``0`` corresponds to a `sentence A` token, ``1``
@@ -659,11 +639,11 @@ BERT_INPUTS_DOCSTRING = r"""
             (see `BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding`_ for more details).
         **attention_mask**: (`optional`) ``torch.Tensor`` of shape ``(batch_size, sequence_length)``:
             Mask to avoid performing attention on padding token indices.
-            Mask indices selected in ``[0, 1]``:
+            Mask values selected in ``[0, 1]``:
             ``1`` for tokens that are NOT MASKED, ``0`` for MASKED tokens.
         **head_mask**: (`optional`) ``torch.Tensor`` of shape ``(num_heads,)`` or ``(num_layers, num_heads)``:
             Mask to nullify selected heads of the self-attention modules.
-            Mask indices selected in ``[0, 1]``:
+            Mask values selected in ``[0, 1]``:
             ``1`` indicates the head is **not masked**, ``0`` indicates the head is **masked**.
 """
 
@@ -718,7 +698,7 @@ class BertModel(BertPreTrainedModel):
         for layer, heads in heads_to_prune.items():
             self.encoder.layer[layer].attention.prune_heads(heads)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, head_mask=None):
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, position_ids=None, head_mask=None):
         if attention_mask is None:
             attention_mask = torch.ones_like(input_ids)
         if token_type_ids is None:
@@ -759,7 +739,8 @@ class BertModel(BertPreTrainedModel):
         else:
             head_mask = [None] * self.config.num_hidden_layers
 
-        embedding_output = self.embeddings(input_ids, token_type_ids)
+        embedding_output = self.embeddings(
+            input_ids, position_ids=position_ids, token_type_ids=token_type_ids)
         encoder_outputs = self.encoder(embedding_output,
                                        extended_attention_mask,
                                        head_mask=head_mask)
@@ -772,7 +753,7 @@ class BertModel(BertPreTrainedModel):
         return outputs
 
 
-@add_start_docstrings("""Bert Model transformer BERT model with two heads on top as done during the pre-training:
+@add_start_docstrings("""Bert Model with two heads on top as done during the pre-training:
     a `masked language modeling` head and a `next sentence prediction (classification)` head. """,
                       BERT_START_DOCSTRING, BERT_INPUTS_DOCSTRING)
 class BertForPreTraining(BertPreTrainedModel):
@@ -811,7 +792,7 @@ class BertForPreTraining(BertPreTrainedModel):
         >>> model = BertForPreTraining(config)
         >>> input_ids = torch.tensor(tokenizer.encode("Hello, my dog is cute")).unsqueeze(0)  # Batch size 1
         >>> outputs = model(input_ids)
-        >>> prediction_scores, seq_relationship_scores = outputs[:1]
+        >>> prediction_scores, seq_relationship_scores = outputs[:2]
 
     """
 
@@ -832,9 +813,9 @@ class BertForPreTraining(BertPreTrainedModel):
                                    self.bert.embeddings.word_embeddings)
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, masked_lm_labels=None,
-                next_sentence_label=None, head_mask=None):
-        outputs = self.bert(input_ids, token_type_ids,
-                            attention_mask, head_mask=head_mask)
+                next_sentence_label=None, position_ids=None, head_mask=None):
+        outputs = self.bert(input_ids, position_ids=position_ids, token_type_ids=token_type_ids,
+                            attention_mask=attention_mask, head_mask=head_mask)
 
         sequence_output, pooled_output = outputs[:2]
         prediction_scores, seq_relationship_score = self.cls(
@@ -856,7 +837,7 @@ class BertForPreTraining(BertPreTrainedModel):
         return outputs
 
 
-@add_start_docstrings("""Bert Model transformer BERT model with a `language modeling` head on top. """,
+@add_start_docstrings("""Bert Model with a `language modeling` head on top. """,
                       BERT_START_DOCSTRING, BERT_INPUTS_DOCSTRING)
 class BertForMaskedLM(BertPreTrainedModel):
     r"""
@@ -887,7 +868,7 @@ class BertForMaskedLM(BertPreTrainedModel):
         >>> model = BertForMaskedLM(config)
         >>> input_ids = torch.tensor(tokenizer.encode("Hello, my dog is cute")).unsqueeze(0)  # Batch size 1
         >>> outputs = model(input_ids, masked_lm_labels=input_ids)
-        >>> loss, prediction_scores = outputs[:1]
+        >>> loss, prediction_scores = outputs[:2]
 
     """
 
@@ -907,9 +888,10 @@ class BertForMaskedLM(BertPreTrainedModel):
         self._tie_or_clone_weights(self.cls.predictions.decoder,
                                    self.bert.embeddings.word_embeddings)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, masked_lm_labels=None, head_mask=None):
-        outputs = self.bert(input_ids, token_type_ids,
-                            attention_mask, head_mask=head_mask)
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, masked_lm_labels=None,
+                position_ids=None, head_mask=None):
+        outputs = self.bert(input_ids, position_ids=position_ids, token_type_ids=token_type_ids,
+                            attention_mask=attention_mask, head_mask=head_mask)
 
         sequence_output = outputs[0]
         prediction_scores = self.cls(sequence_output)
@@ -926,7 +908,7 @@ class BertForMaskedLM(BertPreTrainedModel):
         return outputs
 
 
-@add_start_docstrings("""Bert Model transformer BERT model with a `next sentence prediction (classification)` head on top. """,
+@add_start_docstrings("""Bert Model with a `next sentence prediction (classification)` head on top. """,
                       BERT_START_DOCSTRING, BERT_INPUTS_DOCSTRING)
 class BertForNextSentencePrediction(BertPreTrainedModel):
     r"""
@@ -969,9 +951,10 @@ class BertForNextSentencePrediction(BertPreTrainedModel):
 
         self.apply(self.init_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, next_sentence_label=None, head_mask=None):
-        outputs = self.bert(input_ids, token_type_ids,
-                            attention_mask, head_mask=head_mask)
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, next_sentence_label=None,
+                position_ids=None, head_mask=None):
+        outputs = self.bert(input_ids, position_ids=position_ids, token_type_ids=token_type_ids,
+                            attention_mask=attention_mask, head_mask=head_mask)
         pooled_output = outputs[1]
 
         seq_relationship_score = self.cls(pooled_output)
@@ -988,7 +971,7 @@ class BertForNextSentencePrediction(BertPreTrainedModel):
         return outputs
 
 
-@add_start_docstrings("""Bert Model transformer BERT model with a sequence classification/regression head on top (a linear layer on top of
+@add_start_docstrings("""Bert Model transformer with a sequence classification/regression head on top (a linear layer on top of
     the pooled output) e.g. for GLUE tasks. """,
                       BERT_START_DOCSTRING, BERT_INPUTS_DOCSTRING)
 class BertForSequenceClassification(BertPreTrainedModel):
@@ -1021,7 +1004,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
         >>> input_ids = torch.tensor(tokenizer.encode("Hello, my dog is cute")).unsqueeze(0)  # Batch size 1
         >>> labels = torch.tensor([1]).unsqueeze(0)  # Batch size 1
         >>> outputs = model(input_ids, labels=labels)
-        >>> loss, logits = outputs[:1]
+        >>> loss, logits = outputs[:2]
 
     """
 
@@ -1035,9 +1018,10 @@ class BertForSequenceClassification(BertPreTrainedModel):
 
         self.apply(self.init_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None, head_mask=None):
-        outputs = self.bert(input_ids, token_type_ids,
-                            attention_mask, head_mask=head_mask)
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None,
+                position_ids=None, head_mask=None):
+        outputs = self.bert(input_ids, position_ids=position_ids, token_type_ids=token_type_ids,
+                            attention_mask=attention_mask, head_mask=head_mask)
         pooled_output = outputs[1]
 
         pooled_output = self.dropout(pooled_output)
@@ -1060,7 +1044,7 @@ class BertForSequenceClassification(BertPreTrainedModel):
         return outputs  # (loss), logits, (hidden_states), (attentions)
 
 
-@add_start_docstrings("""Bert Model transformer BERT model with a multiple choice classification head on top (a linear layer on top of
+@add_start_docstrings("""Bert Model with a multiple choice classification head on top (a linear layer on top of
     the pooled output and a softmax) e.g. for RocStories/SWAG tasks. """,
                       BERT_START_DOCSTRING)
 class BertForMultipleChoice(BertPreTrainedModel):
@@ -1095,11 +1079,11 @@ class BertForMultipleChoice(BertPreTrainedModel):
         **attention_mask**: (`optional`) ``torch.Tensor`` of shape ``(batch_size, num_choices, sequence_length)``:
             Mask to avoid performing attention on padding token indices.
             The second dimension of the input (`num_choices`) indicates the number of choices to score.
-            Mask indices selected in ``[0, 1]``:
+            Mask values selected in ``[0, 1]``:
             ``1`` for tokens that are NOT MASKED, ``0`` for MASKED tokens.
         **head_mask**: (`optional`) ``torch.Tensor`` of shape ``(num_heads,)`` or ``(num_layers, num_heads)``:
             Mask to nullify selected heads of the self-attention modules.
-            Mask indices selected in ``[0, 1]``:
+            Mask values selected in ``[0, 1]``:
             ``1`` indicates the head is **not masked**, ``0`` indicates the head is **masked**.
         **labels**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size,)``:
             Labels for computing the multiple choice classification loss.
@@ -1130,7 +1114,7 @@ class BertForMultipleChoice(BertPreTrainedModel):
         >>> input_ids = torch.tensor([tokenizer.encode(s) for s in choices]).unsqueeze(0)  # Batch size 1, 2 choices
         >>> labels = torch.tensor(1).unsqueeze(0)  # Batch size 1
         >>> outputs = model(input_ids, labels=labels)
-        >>> loss, classification_scores = outputs[:1]
+        >>> loss, classification_scores = outputs[:2]
 
     """
 
@@ -1143,16 +1127,19 @@ class BertForMultipleChoice(BertPreTrainedModel):
 
         self.apply(self.init_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None, head_mask=None):
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None,
+                position_ids=None, head_mask=None):
         num_choices = input_ids.shape[1]
 
         flat_input_ids = input_ids.view(-1, input_ids.size(-1))
+        flat_position_ids = position_ids.view(
+            -1, position_ids.size(-1)) if position_ids is not None else None
         flat_token_type_ids = token_type_ids.view(
             -1, token_type_ids.size(-1)) if token_type_ids is not None else None
         flat_attention_mask = attention_mask.view(
             -1, attention_mask.size(-1)) if attention_mask is not None else None
-        outputs = self.bert(flat_input_ids, flat_token_type_ids,
-                            flat_attention_mask, head_mask=head_mask)
+        outputs = self.bert(flat_input_ids, position_ids=flat_position_ids, token_type_ids=flat_token_type_ids,
+                            attention_mask=flat_attention_mask, head_mask=head_mask)
         pooled_output = outputs[1]
 
         pooled_output = self.dropout(pooled_output)
@@ -1171,7 +1158,7 @@ class BertForMultipleChoice(BertPreTrainedModel):
         return outputs
 
 
-@add_start_docstrings("""Bert Model transformer BERT model with a token classification head on top (a linear layer on top of
+@add_start_docstrings("""Bert Model with a token classification head on top (a linear layer on top of
     the hidden-states output) e.g. for Named-Entity-Recognition (NER) tasks. """,
                       BERT_START_DOCSTRING, BERT_INPUTS_DOCSTRING)
 class BertForTokenClassification(BertPreTrainedModel):
@@ -1202,7 +1189,7 @@ class BertForTokenClassification(BertPreTrainedModel):
         >>> input_ids = torch.tensor(tokenizer.encode("Hello, my dog is cute")).unsqueeze(0)  # Batch size 1
         >>> labels = torch.tensor([1] * input_ids.size(1)).unsqueeze(0)  # Batch size 1
         >>> outputs = model(input_ids, labels=labels)
-        >>> loss, scores = outputs[:1]
+        >>> loss, scores = outputs[:2]
 
     """
 
@@ -1216,9 +1203,10 @@ class BertForTokenClassification(BertPreTrainedModel):
 
         self.apply(self.init_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None, head_mask=None):
-        outputs = self.bert(input_ids, token_type_ids,
-                            attention_mask, head_mask=head_mask)
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None,
+                position_ids=None, head_mask=None):
+        outputs = self.bert(input_ids, position_ids=position_ids, token_type_ids=token_type_ids,
+                            attention_mask=attention_mask, head_mask=head_mask)
         sequence_output = outputs[0]
 
         sequence_output = self.dropout(sequence_output)
@@ -1242,17 +1230,17 @@ class BertForTokenClassification(BertPreTrainedModel):
         return outputs  # (loss), scores, (hidden_states), (attentions)
 
 
-@add_start_docstrings("""Bert Model transformer BERT model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear layers on top of
+@add_start_docstrings("""Bert Model with a span classification head on top for extractive question-answering tasks like SQuAD (a linear layers on top of
     the hidden-states output to compute `span start logits` and `span end logits`). """,
                       BERT_START_DOCSTRING, BERT_INPUTS_DOCSTRING)
 class BertForQuestionAnswering(BertPreTrainedModel):
     r"""
         **start_positions**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size,)``:
-            Position (index) of the start of the labelled span for computing the token classification loss.
+            Labels for position (index) of the start of the labelled span for computing the token classification loss.
             Positions are clamped to the length of the sequence (`sequence_length`).
             Position outside of the sequence are not taken into account for computing the loss.
         **end_positions**: (`optional`) ``torch.LongTensor`` of shape ``(batch_size,)``:
-            Position (index) of the end of the labelled span for computing the token classification loss.
+            Labels for position (index) of the end of the labelled span for computing the token classification loss.
             Positions are clamped to the length of the sequence (`sequence_length`).
             Position outside of the sequence are not taken into account for computing the loss.
 
@@ -1295,9 +1283,9 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         self.apply(self.init_weights)
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, start_positions=None,
-                end_positions=None, head_mask=None):
-        outputs = self.bert(input_ids, token_type_ids,
-                            attention_mask, head_mask=head_mask)
+                end_positions=None, position_ids=None, head_mask=None):
+        outputs = self.bert(input_ids, position_ids=position_ids, token_type_ids=token_type_ids,
+                            attention_mask=attention_mask, head_mask=head_mask)
         sequence_output = outputs[0]
 
         logits = self.qa_outputs(sequence_output)

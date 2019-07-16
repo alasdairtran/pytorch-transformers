@@ -38,8 +38,11 @@ class TransfoXLTokenizationTest(unittest.TestCase):
             with open(vocab_file, "w", encoding='utf-8') as vocab_writer:
                 vocab_writer.write("".join([x + "\n" for x in vocab_tokens]))
 
+            input_text = u"<unk> UNwanted , running"
+            output_text = u"<unk> unwanted, running"
+
             create_and_check_tokenizer_commons(
-                self, TransfoXLTokenizer, tmpdirname, lower_case=True)
+                self, input_text, output_text, TransfoXLTokenizer, tmpdirname, lower_case=True)
 
             tokenizer = TransfoXLTokenizer(
                 vocab_file=vocab_file, lower_case=True)
